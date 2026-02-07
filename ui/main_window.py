@@ -393,12 +393,17 @@ class MainWindow(QMainWindow):
         # 차트
         df = result.get("df")
         if df is not None:
+            logger.info(f"[DEBUG MW] bt.trades type={type(bt.trades)}, len={len(bt.trades)}")
+            if bt.trades:
+                for i, t in enumerate(bt.trades):
+                    logger.info(f"[DEBUG MW] trade[{i}]: entry={t.entry_date} exit={t.exit_date}")
             self.chart_widget.plot(
                 df, self._sync_params(),
                 title=f"{name} ({code}) — SuperTrend + JMA",
                 trades=bt.trades,
                 kospi_df=result.get("kospi_df"),
             )
+
 
         # 거래 내역
         trades = bt.trades
