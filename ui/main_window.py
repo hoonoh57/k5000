@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-ui/main_window.py  [MUTABLE]
+ui/main_window.py
 ============================
-메인 윈도우 — 이전 strategy.py UI를 새 구조에 연결.
-PyQt6 기반, core/engine + plugins 조립.
+메인 윈도우 — PyQt6 기반, core/engine + plugins 조립.
 """
 from __future__ import annotations
 import sys
@@ -55,21 +54,49 @@ class MainWindow(QMainWindow):
         self.current_result = None
         self._workers = []
 
-        # ── 엔진 조립 ──
+        # ── 엔진 조립 (전략 라우터 포함) ──
         self._data_source = CompositeDataSource(
             mysql_params=MYSQL_PARAMS,
             cybos_url=CYBOS_URL,
             kiwoom_url=KIWOOM_URL,
         )
         self._indicators = [SuperTrendIndicator(), JMAIndicator(), RSIIndicator()]
-        self._signal_gen = STJMASignalGenerator()
-        self._regime = STRegimeDetector()
+
+        from plugins.signals import (
+            STJMASignalGenerator, BearInverseSignalGenerator,
+            SidewaysSwingSignalGenerator,
+        )
+        from plugins.strategy_router import StrategyRouter
+        from core.types import Regime
+
+        bull_gen = STJMASignalGenerator()
+        bear_gen = BearInverseSignalGenerator()
+        sideways_gen = SidewaysSwingSignalGenerator()
+
+        self._router = StrategyRouter(default_gen=bull_gen)
+        self._router.register(Regime.BULL, bull_gen, {
+            "target_profit_pct": 0.15,
+            "stop_loss_pct": -0.05,
+        })
+        self._router.register(Regime.BEAR, bear_gen, {
+            "target_profit_pct": 0.05,
+            "stop_loss_pct": -0.03,
+        })
+        self._router.register(Regime.SIDEWAYS, sideways_gen, {
+            "target_profit_pct": 0.05,
+            "stop_loss_pct": -0.04,
+            "jma_length": 5,
+        })
+
+        self._signal_gen = bull_gen
+        self._regime = STRegimeDetector(data_source=self._data_source)
         self._risk = RiskManager(
             max_daily_loss_pct=self.params["max_daily_loss_pct"],
             max_monthly_loss_pct=self.params["max_monthly_loss_pct"],
             max_consecutive_losses=self.params["max_consecutive_losses"],
             max_positions=self.params["max_positions"],
             max_per_stock_pct=self.params["max_per_stock_pct"],
+            backtest_mode=True,
         )
         self._bus = EventBus()
         self._engine = BacktestEngine(
@@ -80,6 +107,7 @@ class MainWindow(QMainWindow):
             risk_gate=self._risk,
             event_bus=self._bus,
             params=self.params,
+            strategy_router=self._router,
         )
 
         self._build_ui()

@@ -158,3 +158,99 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AttributeError: 'numpy.timedelta64' object has no attribute 'days'
 
+[2026-02-07 20:49:15] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:15] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:15] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:15] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:15] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:16] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:53] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:53] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:53] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:53] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:53] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+[2026-02-07 20:49:53] Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+

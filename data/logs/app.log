@@ -1755,3 +1755,196 @@ AttributeError: 'Series' object has no attribute 'normalize'
 2026-02-07 19:34:59,389 [INFO] ui.main_window: [DEBUG MW] trade[0]: entry=2025-09-11T00:00:00.000000000 exit=2025-09-22T00:00:00.000000000
 2026-02-07 19:34:59,389 [INFO] ui.main_window: [DEBUG MW] trade[1]: entry=2025-10-20T00:00:00.000000000 exit=2025-11-05T00:00:00.000000000
 2026-02-07 19:34:59,389 [INFO] ui.main_window: [DEBUG MW] trade[2]: entry=2025-11-10T00:00:00.000000000 exit=2026-02-06T00:00:00.000000000
+2026-02-07 20:46:01,225 [INFO] main: === KOSPI Big10 IBS Trading System ===
+2026-02-07 20:46:01,226 [INFO] main: App launched at 20:46:01
+2026-02-07 20:46:01,768 [INFO] plugins.data_source: MySQL connected: localhost:3306/stock_info
+2026-02-07 20:46:01,791 [INFO] plugins.data_source: CompositeDataSource: active sources = ['MySQL', 'Cybos', 'Kiwoom']
+2026-02-07 20:49:06,451 [INFO] main: === KOSPI Big10 IBS Trading System ===
+2026-02-07 20:49:06,451 [INFO] main: App launched at 20:49:06
+2026-02-07 20:49:06,912 [INFO] plugins.data_source: MySQL connected: localhost:3306/stock_info
+2026-02-07 20:49:06,934 [INFO] plugins.data_source: CompositeDataSource: active sources = ['MySQL', 'Cybos', 'Kiwoom']
+2026-02-07 20:49:07,825 [INFO] plugins.data_source: MySQL connected: localhost:3306/stock_info
+2026-02-07 20:49:07,854 [INFO] plugins.data_source: CompositeDataSource: active sources = ['MySQL', 'Cybos', 'Kiwoom']
+2026-02-07 20:49:07,900 [INFO] ui.main_window: [UI] MainWindow 초기화 완료
+2026-02-07 20:49:11,376 [INFO] plugins.data_source: Cybos index: KOSPI loaded 121 rows
+2026-02-07 20:49:11,376 [INFO] plugins.screener: [SCREEN] 시작: 2025-08-11 ~ 2026-02-07, 풀=50, 선정=10
+2026-02-07 20:49:11,413 [INFO] plugins.screener: [SCREEN] DB Level-0: 50개
+2026-02-07 20:49:11,419 [INFO] plugins.screener: [SCREEN] 후보 50개 로드
+2026-02-07 20:49:11,420 [INFO] plugins.screener: [SCREEN] KOSPI 지수 121행, 수익률 120행
+2026-02-07 20:49:11,421 [INFO] plugins.screener: [SCREEN] 분석 중 1/50: 삼성전자(005930)
+2026-02-07 20:49:11,433 [INFO] plugins.data_source: MySQL: 005930 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,448 [INFO] plugins.data_source: MySQL: 000660 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,462 [INFO] plugins.data_source: MySQL: 373220 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,477 [INFO] plugins.data_source: MySQL: 005380 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,491 [INFO] plugins.data_source: MySQL: 329180 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,506 [INFO] plugins.data_source: MySQL: 012450 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,520 [INFO] plugins.data_source: MySQL: 034020 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,534 [INFO] plugins.data_source: MySQL: 105560 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,548 [INFO] plugins.data_source: MySQL: 000270 loaded 124 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,562 [INFO] plugins.data_source: MySQL: 068270 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,567 [INFO] plugins.screener: [SCREEN] 분석 중 11/50: SK스퀘어(402340)
+2026-02-07 20:49:11,576 [INFO] plugins.data_source: MySQL: 402340 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,591 [INFO] plugins.data_source: MySQL: 035420 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,605 [INFO] plugins.data_source: MySQL: 055550 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,620 [INFO] plugins.data_source: MySQL: 028260 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,635 [INFO] plugins.data_source: MySQL: 015760 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,649 [INFO] plugins.data_source: MySQL: 009540 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,663 [INFO] plugins.data_source: MySQL: 032830 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,679 [INFO] plugins.data_source: MySQL: 267260 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,692 [INFO] plugins.data_source: MySQL: 051910 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,706 [INFO] plugins.data_source: MySQL: 012330 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,711 [INFO] plugins.screener: [SCREEN] 분석 중 21/50: 카카오(035720)
+2026-02-07 20:49:11,720 [INFO] plugins.data_source: MySQL: 035720 loaded 123 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,734 [INFO] plugins.data_source: MySQL: 086790 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,748 [INFO] plugins.data_source: MySQL: 006400 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,763 [INFO] plugins.data_source: MySQL: 005490 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,777 [INFO] plugins.data_source: MySQL: 010140 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,791 [INFO] plugins.data_source: MySQL: 000810 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,803 [INFO] plugins.data_source: MySQL: 064350 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,815 [INFO] plugins.data_source: MySQL: 096770 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,826 [INFO] plugins.data_source: MySQL: 298040 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,838 [INFO] plugins.data_source: MySQL: 316140 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,842 [INFO] plugins.screener: [SCREEN] 분석 중 31/50: 메리츠금융지주(138040)
+2026-02-07 20:49:11,851 [INFO] plugins.data_source: MySQL: 138040 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,862 [INFO] plugins.data_source: MySQL: 034730 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,873 [INFO] plugins.data_source: MySQL: 003670 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,886 [INFO] plugins.data_source: MySQL: 011200 loaded 123 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,898 [INFO] plugins.data_source: MySQL: 033780 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,910 [INFO] plugins.data_source: MySQL: 024110 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,922 [INFO] plugins.data_source: MySQL: 000150 loaded 115 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,935 [INFO] plugins.data_source: MySQL: 009150 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,948 [INFO] plugins.data_source: MySQL: 066570 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,960 [INFO] plugins.data_source: MySQL: 010120 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,964 [INFO] plugins.screener: [SCREEN] 분석 중 41/50: 미래에셋증권(006800)
+2026-02-07 20:49:11,972 [INFO] plugins.data_source: MySQL: 006800 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,983 [INFO] plugins.data_source: MySQL: 018260 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:11,994 [INFO] plugins.data_source: MySQL: 003550 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,005 [INFO] plugins.data_source: MySQL: 259960 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,017 [INFO] plugins.data_source: MySQL: 042700 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,028 [INFO] plugins.data_source: MySQL: 030200 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,039 [INFO] plugins.data_source: MySQL: 352820 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,051 [INFO] plugins.data_source: MySQL: 086280 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,062 [INFO] plugins.data_source: MySQL: 017670 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,073 [INFO] plugins.data_source: MySQL: 047810 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 20:49:12,076 [INFO] plugins.screener: [SCREEN] 최종 선정 10개
+2026-02-07 20:49:15,529 [INFO] plugins.data_source: MySQL: 010120 loaded 123 rows (2025-08-07 ~ 2026-02-07)
+2026-02-07 20:49:15,761 [INFO] plugins.data_source: Cybos index: KOSPI loaded 123 rows
+2026-02-07 20:49:15,849 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:15,888 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:15,914 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:15,918 [WARNING] plugins.data_source: Index VKOSPI: all sources failed
+2026-02-07 20:49:15,918 [INFO] plugins.regime: [REGIME] BULL (conf=0.28) total=+0.28 | st_jma=+0.00, ma_trend=+1.00, vkospi=+0.00, foreign=+0.00, momentum=+0.80
+2026-02-07 20:49:15,964 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:15,998 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:16,019 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:16,095 [WARNING] plugins.data_source: Index VKOSPI: all sources failed
+2026-02-07 20:49:16,129 [INFO] plugins.regime: [REGIME] BULL (conf=0.28) total=+0.28 | st_jma=+0.00, ma_trend=+1.00, vkospi=+0.00, foreign=+0.00, momentum=+0.80
+2026-02-07 20:49:16,156 [INFO] plugins.data_source: MySQL: 010120 loaded 123 rows (2025-08-07 ~ 2026-02-07)
+2026-02-07 20:49:16,396 [INFO] plugins.data_source: Cybos index: KOSPI loaded 123 rows
+2026-02-07 20:49:16,401 [INFO] ui.main_window: [DEBUG MW] bt.trades type=<class 'list'>, len=3
+2026-02-07 20:49:16,401 [INFO] ui.main_window: [DEBUG MW] trade[0]: entry=2025-09-11T00:00:00.000000000 exit=2025-09-22T00:00:00.000000000
+2026-02-07 20:49:16,401 [INFO] ui.main_window: [DEBUG MW] trade[1]: entry=2025-10-20T00:00:00.000000000 exit=2025-11-05T00:00:00.000000000
+2026-02-07 20:49:16,401 [INFO] ui.main_window: [DEBUG MW] trade[2]: entry=2025-11-10T00:00:00.000000000 exit=2026-02-06T00:00:00.000000000
+2026-02-07 20:49:53,560 [INFO] plugins.data_source: MySQL: 000150 loaded 117 rows (2025-08-07 ~ 2026-02-07)
+2026-02-07 20:49:53,726 [INFO] plugins.data_source: Cybos index: KOSPI loaded 123 rows
+2026-02-07 20:49:53,768 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:53,797 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:53,824 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:53,827 [WARNING] plugins.data_source: Index VKOSPI: all sources failed
+2026-02-07 20:49:53,828 [INFO] plugins.regime: [REGIME] BULL (conf=0.28) total=+0.28 | st_jma=+0.00, ma_trend=+1.00, vkospi=+0.00, foreign=+0.00, momentum=+0.80
+2026-02-07 20:49:53,862 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:53,885 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:53,911 [ERROR] plugins.data_source: Cybos fetch_index(VKOSPI) error: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\plugins\data_source.py", line 246, in fetch_index_candles
+    r.raise_for_status()
+  File "C:\Users\haoru\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: http://localhost:8081/api/candles_period?code=UVKOSPI&timeframe=D&fromdate=20260108&todate=20260207
+
+2026-02-07 20:49:53,914 [WARNING] plugins.data_source: Index VKOSPI: all sources failed
+2026-02-07 20:49:53,914 [INFO] plugins.regime: [REGIME] BULL (conf=0.28) total=+0.28 | st_jma=+0.00, ma_trend=+1.00, vkospi=+0.00, foreign=+0.00, momentum=+0.80
+2026-02-07 20:49:53,942 [INFO] plugins.data_source: MySQL: 000150 loaded 117 rows (2025-08-07 ~ 2026-02-07)
+2026-02-07 20:49:54,165 [INFO] plugins.data_source: Cybos index: KOSPI loaded 123 rows
+2026-02-07 20:49:54,167 [INFO] ui.main_window: [DEBUG MW] bt.trades type=<class 'list'>, len=4
+2026-02-07 20:49:54,168 [INFO] ui.main_window: [DEBUG MW] trade[0]: entry=2025-09-10T00:00:00.000000000 exit=2025-09-24T00:00:00.000000000
+2026-02-07 20:49:54,168 [INFO] ui.main_window: [DEBUG MW] trade[1]: entry=2025-10-17T00:00:00.000000000 exit=2025-11-05T00:00:00.000000000
+2026-02-07 20:49:54,168 [INFO] ui.main_window: [DEBUG MW] trade[2]: entry=2025-11-11T00:00:00.000000000 exit=2025-11-21T00:00:00.000000000
+2026-02-07 20:49:54,168 [INFO] ui.main_window: [DEBUG MW] trade[3]: entry=2026-01-21T00:00:00.000000000 exit=2026-01-29T00:00:00.000000000

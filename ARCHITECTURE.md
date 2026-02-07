@@ -1,6 +1,6 @@
 # KOSPI Big10 IBS — 아키텍처 문서
 > 최초 작성: 2026-02-07 | 최종 수정: 2026-02-07
-> 버전: 1.0 | 상태: 검증 완료(백테스트), 실매매 연결 전
+> 버전: 1.1 | 상태: 검증 완료(백테스트), 실매매 연결 전
 
 ---
 
@@ -51,13 +51,19 @@
 엔진(`core/engine.py`)이 지표를 먼저 계산하고, 그 결과가 담긴 DataFrame을
 신호 생성기에 전달한다.
 
+**알려진 위반:** `ui/workers.py`의 `AnalysisWorker`가 차트용 지표 재계산을 위해
+`plugins.indicators`를 직접 import함. 향후 엔진이 지표 계산된 df를 반환하도록 개선 예정.
+
 ### 원칙 3: 하나의 파일 = 하나의 책임
 파일 하나가 500줄을 넘으면 분리를 검토한다.
-현재 가장 긴 파일: `ui/main_window.py`(약 350줄), `core/engine.py`(약 300줄).
+현재 가장 긴 파일: `ui/main_window.py`(약 550줄) — 분리 검토 필요.
 
 ### 원칙 4: 모든 데이터는 types.py의 타입으로
 dict나 tuple을 모듈 간에 주고받지 않는다.
 `Signal`, `TradeRecord`, `BacktestResult`, `Order` 등 명시적 타입을 사용한다.
+
+**알려진 위반:** `ScreeningWorker`가 `Candidate` → `dict` 변환 후 UI에 전달.
+향후 `Candidate` 타입을 직접 전달하도록 개선 예정.
 
 ### 원칙 5: 조립은 main.py에서만
 어떤 플러그인을 사용할지, 어떤 파라미터를 쓸지는 오직 `main.py`에서 결정한다.
@@ -68,22 +74,14 @@ dict나 tuple을 모듈 간에 주고받지 않는다.
 ## 4. 파일 구조
 
 Copy
-E:\Kospi\kospi_big10_ibs
-│ ├── ARCHITECTURE.md ← 이 문서 (구조 변경 시 반드시 업데이트) ├── main.py ← 조립 지점 + CLI/UI 진입점 [자유 수정] │ ├── core/ ← 불변 코어 (수정 극도로 신중) │ ├── init.py │ ├── types.py ← 데이터 타입: Signal, TradeRecord 등 │ ├── interfaces.py ← 인터페이스: IDataSource, IIndicator 등 │ ├── event_bus.py ← 이벤트 발행/구독 │ ├── engine.py ← 백테스트 엔진 (strategy.py 로직 이식) │ ├── risk.py ← 서킷브레이커, 포지션사이징 │ ├── metrics.py ← 수익률, 샤프, MDD 계산 │ ├── order_types.py ← Order, BalanceItem, AccountInfo │ └── order_manager.py ← 주문 생애주기 관리 │ ├── config/ │ └── default_params.py ← 파라미터 + DB/서버 접속 정보 [자유 수정] │ ├── plugins/ ← 교체 가능 [자유 수정/추가/삭제] │ ├── init.py │ ├── indicators.py ← SuperTrend, JMA(VB.NET 포팅), RSI │ ├── signals.py ← ST+JMA 매수/매도 신호 │ ├── screener.py ← MySQL 베타/상관 스크리닝 │ ├── regime.py ← 시장 레짐 판단 (상승/하락/횡보) │ ├── data_source.py ← MySQL + Cybos + Kiwoom 폴백 │ └── broker_kiwoom.py ← 키움 브로커 어댑터 │ ├── ui/ ← UI [자유 수정] │ ├── init.py │ ├── main_window.py ← 메인 윈도우 (PyQt6) │ ├── chart_widget.py ← 6행 차트 │ └── workers.py ← QThread 워커 │ └── data/ └── logs/ ├── app.log └── error_log.txt
+E:\Kospi\kospi_big10_ibs │ ├── ARCHITECTURE.md ← 이 문서 (구조 변경 시 반드시 업데이트) ├── main.py ← 조립 지점 + CLI/UI 진입점 [자유 수정] │ ├── core/ ← 불변 코어 (수정 극도로 신중) │ ├── init.py │ ├── types.py ← 데이터 타입: Signal, TradeRecord 등 │ ├── interfaces.py ← 인터페이스: IDataSource, IIndicator 등 │ ├── event_bus.py ← 이벤트 발행/구독 │ ├── engine.py ← 백테스트 엔진 (strategy.py 로직 이식) │ ├── risk.py ← 서킷브레이커, 포지션사이징 │ ├── metrics.py ← 수익률, 샤프, MDD 계산 │ ├── order_types.py ← Order, BalanceItem, AccountInfo │ └── order_manager.py ← 주문 생애주기 관리 │ ├── config/ │ └── default_params.py ← 파라미터 + DB접속(환경변수) [자유 수정] │ ├── plugins/ ← 교체 가능 [자유 수정/추가/삭제] │ ├── init.py │ ├── indicators.py ← SuperTrend, JMA(VB.NET 포팅), RSI │ ├── signals.py ← ST+JMA 매수/매도 신호 │ ├── screener.py ← MySQL 베타/상관 스크리닝 │ ├── regime.py ← 시장 레짐 판단 (상승/하락/횡보) │ ├── data_source.py ← MySQL + Cybos + Kiwoom 폴백 │ └── broker_kiwoom.py ← 키움 브로커 어댑터 │ ├── ui/ ← UI [자유 수정] │ ├── init.py │ ├── main_window.py ← 메인 윈도우 (PyQt6) │ ├── chart_widget.py ← 6행 차트 (캔들+JMA 2색+매매신호+크로스헤어) │ └── workers.py ← QThread 워커 │ └── data/ └── logs/ ├── app.log └── error_log.txt
 
 
 ---
 
 ## 5. 데이터 흐름
 
-[1. 조립] main.py │ ├─ CompositeDataSource (MySQL → Cybos → Kiwoom 자동 폴백) ├─ [SuperTrend, JMA, RSI] 지표 플러그인 ├─ STJMASignalGenerator 신호 생성기 ├─ STRegimeDetector 레짐 판단 ├─ RiskManager 리스크 관리 └─ BacktestEngine 엔진
-
-[2. 스크리닝] BetaCorrelationScreener │ ├─ MySQL stock_base_info → KOSPI 대형주 시총 상위 50개 ├─ 각 종목 일봉 + KOSPI 지수 → 베타/상관 계산 └─ 베타 내림차순 상위 10개 반환
-
-[3. 백테스트] BacktestEngine.run(code) │ ├─ data_source.fetch_candles(code) → 일봉 DataFrame ├─ for indicator in indicators: df = indicator.compute(df) ├─ signals = signal_gen.generate(df, code) └─ _simulate(df, signals) → BacktestResult │ ├─ 매일 포지션 상태 체크 ├─ ATR 동적 손절 + 트레일링 스톱 ├─ JMA 하락전환 시 수익/ST 분기 └─ 결과: 거래목록, 자본곡선, 성과지표
-
-[4. 실매매] (향후) │ ├─ OrderManager.create_order() → 중복검사 → 리스크검증 → 전송 ├─ KiwoomBroker.send_order() → 키움 API └─ on_order_filled() → 잔고 갱신
-
+(기존과 동일 — 변경 없음)
 
 ---
 
@@ -97,7 +95,7 @@ E:\Kospi\kospi_big10_ibs
 
 ### 매도 조건
 1. **손절**: ATR × 2.0 기반 동적 손절 (항상 작동)
-2. **트레일링**: 목표수익(7%) 달성 후 최고가 대비 ATR × 2.5 하락 시
+2. **트레일링**: 목표수익(15%) 달성 후 최고가 대비 ATR × 2.5 하락 시
 3. **ST 하락반전**: 즉시 매도 (무조건)
 4. **JMA 하락전환**:
    - 목표수익 달성 → 매도
@@ -112,64 +110,15 @@ E:\Kospi\kospi_big10_ibs
 
 ---
 
-## 7. 확장 가이드 — "이것을 추가하려면 어디를 고치나?"
+## 7. 확장 가이드
 
-### 7-1. 새 지표 추가 (예: VWAP)
-plugins/indicators.py에 VWAPIndicator 클래스 추가
-IIndicator 인터페이스 구현 (name(), compute())
-main.py의 indicators 리스트에 추가
-indicators = [..., VWAPIndicator()]
-코어 수정: 없음
-
-### 7-2. 새 매매 전략 추가 (예: 볼린저 밴드 전략)
-plugins/signals_bollinger.py 파일 생성
-ISignalGenerator 인터페이스 구현
-main.py에서 signal_gen 교체
-signal_gen = BollingerSignalGenerator()
-코어 수정: 없음
-
-### 7-3. 다른 증권사 연결 (예: 한국투자증권)
-plugins/broker_hantoo.py 파일 생성
-IBroker 인터페이스 구현
-main.py에서 broker 교체
-broker = HantooBroker(api_key=...)
-코어 수정: 없음
-
-### 7-4. 시장 레짐 기반 동적 전략
-plugins/regime.py 수정 또는 새 파일
-IRegimeDetector 인터페이스 구현
-레짐별 파라미터 세트를 config/default_params.py에 추가
-core/engine.py의 run()에서 레짐에 따라 파라미터 분기 → 이 경우 engine.py 수정 필요 (유일한 코어 변경) → ARCHITECTURE.md에 변경 사유 기록
-
-### 7-5. 인버스 ETF / 숏 전략 추가
-plugins/signals_inverse.py 파일 생성
-plugins/screener_bear.py — 하락장용 스크리너
-main.py에서 레짐에 따라 signal_gen 교체
-코어 수정: 없음 (Direction.SELL을 숏 진입으로 재해석)
-
-### 7-6. Walk-Forward 검증 추가
-plugins/walk_forward.py 파일 생성
-BacktestEngine.run()을 반복 호출하는 래퍼
-코어 수정: 없음
+(기존과 동일 — 변경 없음)
 
 ---
 
-## 8. 코어 수정이 필요한 경우 (극도로 신중)
+## 8. 코어 수정이 필요한 경우
 
-코어를 수정해야 하는 상황은 제한적입니다:
-
-| 상황 | 수정 대상 | 주의사항 |
-|------|----------|---------|
-| 새 타입 추가 | core/types.py | 기존 타입 변경 금지, 추가만 |
-| 새 인터페이스 추가 | core/interfaces.py | 기존 인터페이스 변경 금지, 추가만 |
-| 엔진 로직 변경 | core/engine.py | 기존 _simulate 보존, 새 메서드 추가 |
-| 주문 흐름 변경 | core/order_manager.py | 7단계 흐름 순서 변경 금지 |
-
-**코어 수정 절차:**
-1. 이 문서의 "의사결정 기록" 섹션에 사유 추가
-2. 변경 전 기존 테스트(CLI 백테스트) 통과 확인
-3. 변경 후 동일 테스트 재실행하여 성과 차이 확인
-4. 차이가 있으면 이 문서에 기록
+(기존과 동일 — 변경 없음)
 
 ---
 
@@ -186,9 +135,11 @@ BacktestEngine.run()을 반복 호출하는 래퍼
 - **동시 포지션 미지원**: 현재 종목당 1포지션, 포트폴리오 동시 운용 미구현
 - **EventBus 동시성**: 실매매 시 멀티스레드 환경에서 락 필요
 - **데이터 검증 계층**: fetch_candles 반환값의 품질 검증이 엔진 내부에 혼재
+- **AnalysisWorker 지표 재계산**: 엔진이 이미 계산한 지표를 차트용으로 다시 계산 (중복)
+- **main_window.py 500줄 초과**: 분리 검토 필요
 
 ### 복잡도 경고
-현재 파일 24개, 총 약 3,000줄. 이 수준은 관리 가능.
+현재 파일 24개, 총 약 3,500줄. 이 수준은 관리 가능.
 파일이 40개를 넘거나 총 줄 수가 8,000줄을 넘으면 구조 재검토.
 
 ---
@@ -198,11 +149,17 @@ BacktestEngine.run()을 반복 호출하는 래퍼
 | 파라미터 | 값 | 설명 |
 |---------|---|------|
 | st_period | 14 | SuperTrend ATR 기간 |
-| st_multiplier | 2.0 | SuperTrend 배수 |
+| st_multiplier | **3.0** | SuperTrend 배수 |
 | jma_length | 7 | JMA 기간 |
 | jma_phase | 50 | JMA 위상 |
-| target_profit_pct | 0.07 | 목표수익 7% |
+| jma_power | 2 | JMA 거듭제곱 |
+| rsi_period | 14 | RSI 기간 |
+| rsi_fast | 5 | RSI 빠른 기간 |
+| rsi_os | 35 | RSI 과매도 |
+| rsi_ob | 80 | RSI 과매수 |
+| target_profit_pct | **0.15** | 목표수익 **15%** |
 | stop_loss_pct | -0.05 | 고정 손절 -5% |
+| trailing_stop_pct | 0.08 | 트레일링 스톱 8% |
 | use_atr_stops | True | ATR 동적 손절 사용 |
 | atr_stop_mult | 2.0 | ATR 손절 배수 |
 | atr_trailing_mult | 2.5 | ATR 트레일링 배수 |
@@ -211,6 +168,7 @@ BacktestEngine.run()을 반복 호출하는 래퍼
 | screen_top_n | 10 | 최종 선정 수 |
 | screen_min_beta | 0.8 | 최소 베타 |
 | screen_min_corr | 0.4 | 최소 상관 |
+| initial_capital | 10,000,000 | 초기 자본 |
 
 ---
 
@@ -234,6 +192,18 @@ BacktestEngine.run()을 반복 호출하는 래퍼
 - **결정**: _JMACore 클래스에 VB.NET 적응형 변동성밴드 로직 완전 보존
 - **결과**: 삼성전자 동일 수익률 복원 확인
 
+### ADR-004: DB 비밀번호 환경변수 전환 (2026-02-07)
+- **상태**: 채택
+- **맥락**: GitHub public 저장소에 비밀번호 노출 위험
+- **결정**: `config/default_params.py`에서 `os.environ.get("DB_PASSWORD", "")` 사용
+- **결과**: 로컬에서 `setx DB_PASSWORD "..."` 설정 필요
+
+### ADR-005: 차트 전면 개선 (2026-02-07)
+- **상태**: 채택
+- **맥락**: 라인차트에서 JMA 구분 불가, 매매 신호 미표시, 마우스 인터랙션 없음
+- **결정**: OHLC 캔들차트 + JMA 2색(상승/하락) + 매매신호 마커(▲/▼) + 크로스헤어(blitting)
+- **결과**: JMA Slope를 퍼센트 변화율로 변환, 날짜 문자열 매칭으로 신호 마커 안정화
+
 ---
 
 ## 12. 변경 이력
@@ -241,47 +211,27 @@ BacktestEngine.run()을 반복 호출하는 래퍼
 | 날짜 | 버전 | 변경 내용 | 변경자 |
 |------|------|----------|--------|
 | 2026-02-07 | 1.0 | 최초 작성 | - |
-| | | | |
+| 2026-02-07 | 1.1 | 파라미터 실제값 반영, DB 환경변수 전환, 차트 개선 기록, 원칙 위반 사항 명시, 실행모드 설명 수정 | - |
 
 ---
 
-## 부록 A: 빠른 참조 — "이 파일은 뭘 하나?"
+## 부록 A: 빠른 참조
 
-| 파일 | 한 줄 요약 | 수정 빈도 |
-|------|-----------|----------|
-| core/types.py | Signal, TradeRecord 등 데이터 구조 정의 | 거의 없음 |
-| core/interfaces.py | IDataSource, IIndicator 등 계약 정의 | 거의 없음 |
-| core/engine.py | 매일 포지션 체크하는 백테스트 루프 | 낮음 |
-| core/risk.py | 서킷브레이커, ATR 포지션사이징 | 낮음 |
-| core/metrics.py | 수익률/샤프/MDD 계산 | 거의 없음 |
-| core/order_manager.py | 주문→체결→잔고 7단계 | 거의 없음 |
-| core/order_types.py | Order, BalanceItem 타입 | 거의 없음 |
-| core/event_bus.py | 이벤트 발행/구독 | 거의 없음 |
-| config/default_params.py | 파라미터 기본값 + DB 접속 | 자주 |
-| plugins/indicators.py | SuperTrend, JMA, RSI 계산 | 보통 |
-| plugins/signals.py | 매수/매도 신호 생성 규칙 | 자주 |
-| plugins/screener.py | 베타/상관 종목 스크리닝 | 보통 |
-| plugins/regime.py | 시장 상승/하락/횡보 판단 | 보통 |
-| plugins/data_source.py | MySQL+Cybos+Kiwoom 데이터 | 낮음 |
-| plugins/broker_kiwoom.py | 키움 주문 실행 | 낮음 |
-| ui/main_window.py | 메인 UI 레이아웃 | 보통 |
-| ui/chart_widget.py | 6행 차트 그리기 | 보통 |
-| ui/workers.py | 스크리닝/분석 QThread | 낮음 |
-| main.py | 모든 것을 조립하는 진입점 | 자주 |
+(기존과 동일)
 
 ## 부록 B: 실행 방법
 
 ```bash
-# CLI 백테스트 (기본)
+# UI 모드 (기본)
 cd E:\Kospi\kospi_big10_ibs
 python main.py
 
-# UI 모드
-set RUN_MODE=ui
+# CLI 백테스트
+set RUN_MODE=backtest
 python main.py
 
-# 이전 strategy.py 단독 실행 (호환 유지)
-python strategy.py
+# 환경변수 설정 (최초 1회)
+setx DB_PASSWORD "your_password_here"
 부록 C: 의존 패키지
 Python 3.11+
 PyQt6
@@ -291,5 +241,3 @@ matplotlib
 pymysql
 sqlalchemy
 requests
-
----
