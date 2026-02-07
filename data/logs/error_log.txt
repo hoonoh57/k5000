@@ -1,0 +1,160 @@
+[2026-02-07 14:13:09] BacktestEngine.run(005930) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:09] BacktestEngine.run(000660) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:09] BacktestEngine.run(402340) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:10] BacktestEngine.run(005380) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:10] BacktestEngine.run(329180) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:31] BacktestEngine.run(005930) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:31] BacktestEngine.run(000660) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:31] BacktestEngine.run(402340) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:31] BacktestEngine.run(005380) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+
+[2026-02-07 14:13:31] BacktestEngine.run(329180) error: 'numpy.timedelta64' object has no attribute 'days'
+Traceback (most recent call last):
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 98, in run
+    result = self._simulate(df, signals, code, initial_capital, regime)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\engine.py", line 301, in _simulate
+    return calc_metrics(code, trades, capital, eq_series)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 42, in calc_metrics
+    sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+                                                      ^^^^^^^^^^^^^^^^^
+  File "E:\Kospi\kospi_big10_ibs\core\metrics.py", line 71, in _avg_days
+    d = (t.exit_date - t.entry_date).days
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.timedelta64' object has no attribute 'days'
+

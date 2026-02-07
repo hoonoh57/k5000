@@ -1,0 +1,81 @@
+# -*- coding: utf-8 -*-
+"""
+config/default_params.py  [MUTABLE]
+===================================
+전략 파라미터 기본값 — strategy.py 검증값 복원.
+"""
+
+DEFAULT_PARAMS = {
+    # ── RSI (필터용) ──
+    "rsi_period": 14,
+    "rsi_fast": 5,
+    "rsi_os": 35,              # 과매도 (매수 추가 확신)
+    "rsi_ob": 80,              # 극단 과매수 경고
+
+    # ── JMA ──
+    "jma_length": 7,
+    "jma_phase": 50,
+    "jma_power": 2,
+    "jma_slope_min": 0.0,      # 0이면 기울기 필터 비활성
+
+    # ── SuperTrend ──
+    "st_period": 14,
+    "st_multiplier": 3.0,      # strategy.py 검증값
+
+    # ── 이동평균 (차트용) ──
+    "ma_mid": 20,
+    "ma_long": 60,
+
+    # ── 볼린저 (차트용) ──
+    "bb_period": 20,
+    "bb_std": 2.0,
+
+    # ── ATR ──
+    "atr_period": 14,
+
+    # ── 리스크 관리 (strategy.py 검증값) ──
+    "stop_loss_pct": -0.05,         # -5%
+    "target_profit_pct": 0.15,      # +7%
+    "trailing_stop_pct": 0.08,      # 5%
+    "use_atr_stops": True,
+    "atr_stop_mult": 2.0,
+    "atr_trailing_mult": 2.5,
+    "min_hold_days": 2,
+
+    # ── 서킷브레이커 (종목별 독립) ──
+    "max_daily_loss_pct": -10.0,
+    "max_monthly_loss_pct": -20.0,
+    "max_consecutive_losses": 5,
+    "max_positions": 10,
+    "max_per_stock_pct": 100.0,     # 백테스트에서는 종목당 100%
+
+    # ── 스크리닝 ──
+    "screen_top_n": 10,
+    "screen_min_volume": 500_000,
+    "screen_min_beta": 0.8,
+    "screen_min_corr": 0.4,
+    "candidate_pool": 50,
+    "screen_months": 6,
+
+    # ── 레짐 ──
+    "regime_st_period": 20,
+    "regime_st_multiplier": 2.5,
+
+    # ── 백테스트 ──
+    "initial_capital": 10_000_000,
+}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  데이터 소스 설정
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MYSQL_PARAMS = {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "ms34469118",
+    "database": "stock_info",
+}
+
+CYBOS_URL = "http://localhost:8081"
+KIWOOM_URL = "http://localhost:8082"

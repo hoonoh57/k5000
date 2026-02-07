@@ -1,0 +1,102 @@
+# -*- coding: utf-8 -*-
+"""
+ui/chart_widget.py  [MUTABLE]
+=============================
+6개 서브플롯 차트 위젯. Matplotlib 기반.
+"""
+from __future__ import annotations
+import logging
+import traceback
+import numpy as np
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+try:
+    import matplotlib
+    matplotlib.use("Agg")  # 비 대화형 백엔드
+    import matplotlib.pyplot as plt
+    from matplotlib.figure import Figure
+    HAS_MPL = True
+except ImportError:
+    HAS_MPL = False
+    logger.warning("matplotlib not found; chart disabled")
+
+
+class ChartWidget:
+    """6개 서브플롯: 가격+ST+JMA, 거래량, RSI, JMA기울기, ST방향, 자산곡선."""
+
+    def draw(self, df: pd.DataFrame, signals=None, equity=None,
+             save_path: str = None) -> bool:
+        if not HAS_MPL:
+            return False
+
+        try:
+            fig, axes = plt.subplots(6, 1, figsize=(16, 20), sharex=True,
+                                      gridspec_kw={"height_ratios": [3, 1, 1, 1, 0.5, 1.5]})
+
+            # 1) 가격 + SuperTrend + JMA
+            ax = axes[0]
+            ax.set_title("Price / SuperTrend / JMA")
+            if "close" in df.columns:
+                ax.plot(df.index, df["close"], label="Close", color="black", linewidth=0.8)
+            if "st" in df.columns:
+                colors = ["green" if d == 1 else "red" for d in df.get("st_dir", [1]*len(df))]
+                ax.scatter(df.index, df["st"], c=colors, s=1, label="ST")
+            if "jma" in df.columns:
+                ax.plot(df.index, df["jma"], label="JMA", color="blue", linewidth=1)
+            ax.legend(loc="upper left", fontsize=7)
+
+            # 2) 거래량
+            ax = axes[1]
+            ax.set_title("Volume")
+            if "volume" in df.columns:
+                ax.bar(df.index, df["volume"], color="gray", width=0.8)
+
+            # 3) RSI
+            ax = axes[2]
+            ax.set_title("RSI")
+            if "rsi" in df.columns:
+                ax.plot(df.index, df["rsi"], color="purple", linewidth=0.8)
+                ax.axhline(70, color="red", linestyle="--", linewidth=0.5)
+                ax.axhline(30, color="green", linestyle="--", linewidth=0.5)
+
+            # 4) JMA Slope
+            ax = axes[3]
+            ax.set_title("JMA Slope")
+            if "jma_slope" in df.columns:
+                ax.bar(df.index, df["jma_slope"],
+                       color=["green" if s > 0 else "red" for s in df["jma_slope"]],
+                       width=0.8)
+                ax.axhline(0, color="black", linewidth=0.5)
+
+            # 5) ST Direction
+            ax = axes[4]
+            ax.set_title("ST Direction")
+            if "st_dir" in df.columns:
+                ax.fill_between(df.index, df["st_dir"], 0, alpha=0.5,
+                                color="green", where=df["st_dir"] > 0)
+                ax.fill_between(df.index, df["st_dir"], 0, alpha=0.5,
+                                color="red", where=df["st_dir"] < 0)
+
+            # 6) Equity Curve
+            ax = axes[5]
+            ax.set_title("Equity Curve")
+            if equity is not None and len(equity) > 0:
+                ax.plot(range(len(equity)), equity, color="darkblue", linewidth=1)
+
+            try:
+                fig.tight_layout()
+            except Exception:
+                fig.subplots_adjust(hspace=0.3)
+
+            if save_path:
+                fig.savefig(save_path, dpi=100, bbox_inches="tight")
+                logger.info(f"Chart saved: {save_path}")
+
+            plt.close(fig)
+            return True
+
+        except Exception as e:
+            logger.error(f"ChartWidget.draw error: {e}\n{traceback.format_exc()}")
+            return False

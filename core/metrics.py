@@ -1,0 +1,87 @@
+# -*- coding: utf-8 -*-
+"""
+core/metrics.py  [IMMUTABLE]
+============================
+성과 지표 계산. 백테스트·실매매 공통.
+"""
+from __future__ import annotations
+from typing import List, Optional
+import math
+import pandas as pd
+from core.types import TradeRecord, BacktestResult
+
+
+def calc_metrics(
+    code: str,
+    trades: List[TradeRecord],
+    initial_capital: float,
+    equity_curve: Optional[pd.Series] = None,
+) -> BacktestResult:
+    """거래 목록으로부터 전체 성과 지표를 계산하여 BacktestResult 반환."""
+    if not trades:
+        return BacktestResult(
+            code=code, initial_capital=initial_capital, final_capital=initial_capital,
+            total_return_pct=0.0, trade_count=0, win_count=0, lose_count=0,
+            win_rate=0.0, avg_pnl_pct=0.0, max_drawdown_pct=0.0,
+            sharpe_ratio=0.0, avg_holding_days=0.0, trades=trades,
+            equity_curve=equity_curve,
+        )
+
+    wins = [t for t in trades if t.pnl > 0]
+    losses = [t for t in trades if t.pnl <= 0]
+    total_pnl = sum(t.pnl for t in trades)
+    final_capital = initial_capital + total_pnl
+
+    pnl_pcts = [t.pnl_pct for t in trades]
+    avg_pnl = sum(pnl_pcts) / len(pnl_pcts) if pnl_pcts else 0.0
+
+    # 샤프 비율 (연환산, rf=0)
+    if len(pnl_pcts) > 1:
+        mean_r = sum(pnl_pcts) / len(pnl_pcts)
+        std_r = math.sqrt(sum((r - mean_r) ** 2 for r in pnl_pcts) / (len(pnl_pcts) - 1))
+        sharpe = (mean_r / std_r * math.sqrt(252 / max(1, _avg_days(trades)))) if std_r > 0 else 0.0
+    else:
+        sharpe = 0.0
+
+    # MDD
+    mdd = _calc_mdd(equity_curve) if equity_curve is not None and len(equity_curve) > 0 else 0.0
+
+    return BacktestResult(
+        code=code,
+        initial_capital=initial_capital,
+        final_capital=final_capital,
+        total_return_pct=(final_capital / initial_capital - 1) * 100,
+        trade_count=len(trades),
+        win_count=len(wins),
+        lose_count=len(losses),
+        win_rate=len(wins) / len(trades) * 100 if trades else 0.0,
+        avg_pnl_pct=avg_pnl,
+        max_drawdown_pct=mdd,
+        sharpe_ratio=sharpe,
+        avg_holding_days=_avg_days(trades),
+        trades=trades,
+        equity_curve=equity_curve,
+    )
+
+
+def _avg_days(trades: List[TradeRecord]) -> float:
+    days = []
+    for t in trades:
+        if t.entry_date is not None and t.exit_date is not None:
+            try:
+                # pandas Timestamp, datetime, numpy.datetime64 모두 대응
+                delta = pd.Timestamp(t.exit_date) - pd.Timestamp(t.entry_date)
+                d = max(delta.days, 1)
+                days.append(d)
+            except Exception:
+                days.append(1)
+    return sum(days) / len(days) if days else 0.0
+
+
+
+def _calc_mdd(equity: pd.Series) -> float:
+    if equity is None or len(equity) < 2:
+        return 0.0
+    peak = equity.expanding().max()
+    dd = (equity - peak) / peak * 100
+    return float(dd.min())

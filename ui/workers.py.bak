@@ -1,0 +1,72 @@
+# -*- coding: utf-8 -*-
+"""
+ui/workers.py  [MUTABLE]
+========================
+QThread 워커: 스크리닝, 백테스트, 실매매 감시.
+"""
+from __future__ import annotations
+import logging
+import traceback
+
+logger = logging.getLogger(__name__)
+
+try:
+    from PyQt5.QtCore import QThread, pyqtSignal
+    HAS_QT = True
+except ImportError:
+    HAS_QT = False
+    logger.warning("PyQt5 not found; workers disabled")
+    # 더미 클래스
+    class QThread:
+        pass
+    class pyqtSignal:
+        def __init__(self, *args): pass
+
+
+class ScreeningWorker(QThread):
+    finished = pyqtSignal(list)   # List[Candidate]
+    error = pyqtSignal(str)
+    progress = pyqtSignal(int, int)  # current, total
+
+    def __init__(self, screener, universe, index_df, data_source, params, parent=None):
+        super().__init__(parent)
+        self.screener = screener
+        self.universe = universe
+        self.index_df = index_df
+        self.data_source = data_source
+        self.params = params
+
+    def run(self):
+        try:
+            result = self.screener.screen(
+                self.universe, self.index_df, self.data_source, self.params
+            )
+            self.finished.emit(result)
+        except Exception as e:
+            msg = f"ScreeningWorker error: {e}\n{traceback.format_exc()}"
+            logger.error(msg)
+            self.error.emit(msg)
+
+
+class BacktestWorker(QThread):
+    finished = pyqtSignal(object)   # BacktestResult
+    error = pyqtSignal(str)
+    progress = pyqtSignal(str)  # 진행 메시지
+
+    def __init__(self, engine, code, start, end, capital, parent=None):
+        super().__init__(parent)
+        self.engine = engine
+        self.code = code
+        self.start = start
+        self.end = end
+        self.capital = capital
+
+    def run(self):
+        try:
+            self.progress.emit(f"Backtesting {self.code}...")
+            result = self.engine.run(self.code, self.start, self.end, self.capital)
+            self.finished.emit(result)
+        except Exception as e:
+            msg = f"BacktestWorker error: {e}\n{traceback.format_exc()}"
+            logger.error(msg)
+            self.error.emit(msg)
