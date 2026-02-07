@@ -2,4 +2,6 @@ __pycache__/
 *.pyc
 *.bak
 data/logs/
-.env
+.env__pycache__/ 
+*.pyc 
+data/logs/ 

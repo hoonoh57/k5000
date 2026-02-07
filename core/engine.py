@@ -84,13 +84,19 @@ class BacktestEngine:
                 try:
                     idx_df = self.data_source.fetch_index_candles("KOSPI", start, end)
                     if idx_df is not None and not idx_df.empty:
-                        regime = self.regime_detector.detect(idx_df, self.params)
+                        # detect_detailed 우선 사용 (매크로 분석 포함)
                         if hasattr(self.regime_detector, "detect_detailed"):
                             regime_state = self.regime_detector.detect_detailed(
-                                idx_df, self.params
+                                idx_df, self.params,
+                                data_source=self.data_source,
+                                start=start, end=end
                             )
-                except Exception:
-                    pass
+                            regime = regime_state.regime
+                        else:
+                            regime = self.regime_detector.detect(idx_df, self.params)
+                except Exception as e:
+                    logger.warning(f"[ENGINE] 레짐 판정 실패, BULL 기본값 사용: {e}")
+
 
             # 전략 라우팅: router가 있으면 레짐에 맞는 signal_gen + params 선택
             active_sig_gen = self.signal_gen
@@ -99,6 +105,13 @@ class BacktestEngine:
                 active_sig_gen, active_params = self.strategy_router.select(
                     regime, self.params
                 )
+                logger.info(
+                    f"[ENGINE] {code}: regime={regime.name}, "
+                    f"signal_gen={active_sig_gen.__class__.__name__}, "
+                    f"target={active_params.get('target_profit_pct')}, "
+                    f"stop={active_params.get('stop_loss_pct')}"
+                )
+
 
             # 자본 배분 (레짐 상태에서)
             if regime_state:

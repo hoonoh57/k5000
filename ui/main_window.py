@@ -2,7 +2,7 @@
 """
 ui/main_window.py
 ============================
-메인 윈도우 — PyQt6 기반, core/engine + plugins 조립.
+메인 윈도우 - PyQt6 기반, core/engine + plugins 조립.
 """
 from __future__ import annotations
 import sys
@@ -111,6 +111,8 @@ class MainWindow(QMainWindow):
         )
 
         self._build_ui()
+        # Python logger → 로그 탭 연결
+        self._setup_log_handler()
         logger.info("[UI] MainWindow 초기화 완료")
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -284,6 +286,32 @@ class MainWindow(QMainWindow):
         splitter.setSizes([350, 1050])
         main_layout.addWidget(splitter)
 
+    def _setup_log_handler(self):
+        """Python logger 출력을 로그 탭으로 리다이렉트."""
+
+        class QtLogHandler(logging.Handler):
+            def __init__(self, text_widget):
+                super().__init__()
+                self._widget = text_widget
+
+            def emit(self, record):
+                try:
+                    msg = self.format(record)
+                    # 스레드 안전: 직접 append
+                    self._widget.append(msg)
+                except Exception:
+                    pass
+
+        handler = QtLogHandler(self.log_text)
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%H:%M:%S",
+        ))
+        handler.setLevel(logging.INFO)
+        logging.getLogger().addHandler(handler)
+
+
+
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     #  파라미터 동기화
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -414,8 +442,15 @@ class MainWindow(QMainWindow):
             self.progress_label.setText(f"{name} 분석 실패")
             return
 
+        regime = result.get("regime")
+        regime_name = regime.name if regime else "N/A"
         self.progress_label.setText(
-            f"{name} 완료 — 수익률 {bt.total_return_pct:.2f}%"
+            f"{name} 완료 - 레짐: {regime_name} | 수익률 {bt.total_return_pct:.2f}%"
+        )
+        self._append_log(
+            f"[RESULT] {name}({code}): regime={regime_name}, "
+            f"return={bt.total_return_pct:.2f}%, trades={bt.trade_count}, "
+            f"win_rate={bt.win_rate:.1f}%"
         )
 
         # 차트
@@ -427,7 +462,7 @@ class MainWindow(QMainWindow):
                     logger.info(f"[DEBUG MW] trade[{i}]: entry={t.entry_date} exit={t.exit_date}")
             self.chart_widget.plot(
                 df, self._sync_params(),
-                title=f"{name} ({code}) — SuperTrend + JMA",
+                title=f"{name} ({code}) - SuperTrend + JMA",
                 trades=bt.trades,
                 kospi_df=result.get("kospi_df"),
             )
@@ -451,9 +486,17 @@ class MainWindow(QMainWindow):
             self.trades_table.setItem(i, 7, QTableWidgetItem(t.exit_reason))
 
         # 포트폴리오 요약
+        regime_desc_map = {
+            "BULL": "자본 100% | 공격적 롱",
+            "BEAR": "자본 10% | 인버스/방어",
+            "SIDEWAYS": "자본 40% | 단기 스윙",
+        }
+        regime_desc = regime_desc_map.get(regime_name, "")
+
         txt = f"""
 {'=' * 60}
   종목: {name} ({code})
+  레짐: {regime_name} - {regime_desc}
 {'=' * 60}
   초기 자본:           {bt.initial_capital:>15,.0f} 원
   최종 자본:           {bt.final_capital:>15,.0f} 원
@@ -468,6 +511,8 @@ class MainWindow(QMainWindow):
   평균 보유일:         {bt.avg_holding_days:>13.1f} 일
 {'=' * 60}
 """
+
+
         self.portfolio_text.setPlainText(txt)
 
         # 자본곡선

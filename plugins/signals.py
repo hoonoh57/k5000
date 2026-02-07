@@ -16,7 +16,7 @@ from core.types import Signal, Direction
 
 
 class STJMASignalGenerator(ISignalGenerator):
-    """상승장 주력: ST 상승 + JMA 상승전환 매수."""
+    """상승장 주력: ST 상승 + JMA 상승전환 매수 (횡보 필터 포함)."""
 
     def generate(self, df: pd.DataFrame, code: str,
                  params: Dict[str, Any]) -> List[Signal]:
@@ -71,6 +71,21 @@ class STJMASignalGenerator(ISignalGenerator):
                 strength = min(strength + 0.2, 1.0)
                 reason += "+RSI_OS"
 
+            # ── 횡보 필터: 매수 직전 횡보 감지 시 억제 ──
+            if buy and self._is_sideways(df, i):
+                logger.debug(
+                    f"[SIGNAL] {code} {dt}: 횡보 감지 - 매수 억제 "
+                    f"({reason})"
+                )
+                buy = False
+                # 억제된 것도 기록하려면 HOLD 신호로 남김
+                signals.append(Signal(
+                    direction=Direction.HOLD, code=code, dt=dt,
+                    price=float(close[i]), strength=0.0,
+                    reason=f"SIDEWAYS_FILTER({reason})",
+                ))
+                continue
+
             if buy:
                 signals.append(Signal(
                     direction=Direction.BUY, code=code, dt=dt,
@@ -101,6 +116,54 @@ class STJMASignalGenerator(ISignalGenerator):
                 ))
 
         return signals
+
+    def _is_sideways(self, df: pd.DataFrame, idx: int) -> bool:
+        """
+        매수 시점(idx)에서 과거 데이터만으로 횡보 여부 판단.
+        미래 데이터 참조 없음 - 모두 idx 이전 데이터만 사용.
+
+        조건 (2개 이상 충족 시 횡보):
+          1) ATR 축소: 현재 ATR < 20일 평균 ATR * 0.7
+          2) JMA slope 진동: 최근 10일간 부호 전환 3회 이상
+          3) 가격 레인지 축소: 최근 20일 일중 변동폭 평균 < 2%
+        """
+        lookback = 20
+        if idx < lookback:
+            return False
+
+        sideways_count = 0
+
+        # 조건 1: ATR 축소 (변동성 감소)
+        if 'atr' in df.columns:
+            atr_now = df['atr'].iloc[idx]
+            atr_window = df['atr'].iloc[max(0, idx - lookback):idx]
+            atr_avg = atr_window.mean()
+            if atr_avg > 0 and not np.isnan(atr_now):
+                if atr_now < atr_avg * 0.7:
+                    sideways_count += 1
+
+        # 조건 2: JMA slope 방향 진동 (추세 부재)
+        if 'jma_slope' in df.columns:
+            slope_window = df['jma_slope'].iloc[max(0, idx - 10):idx + 1]
+            if len(slope_window) >= 5:
+                signs = (slope_window > 0).astype(int)
+                flips = signs.diff().abs().sum()
+                if flips >= 3:
+                    sideways_count += 1
+
+        # 조건 3: 일중 변동폭 축소 (좁은 레인지)
+        if all(c in df.columns for c in ['high', 'low', 'close']):
+            window = df.iloc[max(0, idx - lookback):idx + 1]
+            if len(window) >= 10:
+                avg_close = window['close'].mean()
+                if avg_close > 0:
+                    range_pct = (
+                        (window['high'] - window['low']) / avg_close
+                    ).mean() * 100
+                    if range_pct < 2.0:
+                        sideways_count += 1
+
+        return sideways_count >= 2
 
 
 class BearInverseSignalGenerator(ISignalGenerator):

@@ -201,7 +201,14 @@ def _run_cli_pipeline(data_source, bt_engine, params):
         logger.info("=" * 70)
 
     logger.info("=== Complete ===")
-
-
 if __name__ == "__main__":
+    import sys
+    import traceback
+
+    def exception_hook(exc_type, exc_value, exc_tb):
+        traceback.print_exception(exc_type, exc_value, exc_tb)
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+
+    sys.excepthook = exception_hook
+
     main()

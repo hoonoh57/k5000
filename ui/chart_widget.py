@@ -1,486 +1,693 @@
 # -*- coding: utf-8 -*-
 """
-ui/chart_widget.py  [MUTABLE]
-=============================
-6행 차트: 캔들+JMA+ST | 거래량 | JMA Slope(%) | RSI | SuperTrend | KOSPI 비교
+ui/chart_widget.py
+==================
+6패널 주식 차트: 캔들스틱 + JMA/ST 오버레이, 볼륨, JMA 슬로프, RSI, ST, KOSPI 비교.
+Buy/Sell 마커, 크로스헤어(x=날짜, y=가격) 포함.
 """
 from __future__ import annotations
+
 import logging
-import traceback
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtCore import Qt
 
-import matplotlib
-matplotlib.use("QtAgg")
-from matplotlib.backends.backend_qtagg import FigureCanvas
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import FancyBboxPatch
 import matplotlib.ticker as mticker
+import matplotlib.dates as mdates
 
 logger = logging.getLogger(__name__)
 
 
 class StockChartWidget(QWidget):
+    """PyQt6 위젯: matplotlib 기반 6패널 주식 차트."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.fig = Figure(figsize=(14, 10), dpi=100, facecolor='#1e1e2e')
+        self.canvas = FigureCanvas(self.fig)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.fig = Figure(figsize=(14, 12), dpi=80)
-        self.canvas = FigureCanvas(self.fig)
         layout.addWidget(self.canvas)
 
-        # 크로스헤어
+        # 크로스헤어 상태
         self._crosshair_lines = []
         self._crosshair_texts = []
         self._axes_list = []
-        self._x_data = None
-        self._date_labels = None
-        self._x_date_text = None
-        self._bg_cache = None
+        self._x_dates = []   # datetime 리스트
+        self._bg = None
 
-        self.canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
-        self.canvas.mpl_connect("axes_leave_event", self._on_mouse_leave)
-        self.canvas.mpl_connect("draw_event", self._on_draw)
+        self.canvas.mpl_connect('motion_notify_event', self._on_mouse_move)
+        self.canvas.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
-    # ================================================================
-    #  메인 plot
-    # ================================================================
-    def plot(self, df, p, title="", trades=None, kospi_df=None):
+    # ─────────────────── 메인 plot ───────────────────
+    def plot(self, df: pd.DataFrame, p: dict, title: str = '',
+             trades=None, kospi_df=None):
+        """전체 차트를 다시 그린다."""
+        self.fig.clear()
+        self._crosshair_lines.clear()
+        self._crosshair_texts.clear()
+        self._axes_list.clear()
+        self._x_dates.clear()
+
+        if df is None or df.empty:
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor('#1e1e2e')
+            ax.text(0.5, 0.5, '데이터 없음', transform=ax.transAxes,
+                    ha='center', va='center', fontsize=16, color='#888')
+            self.canvas.draw()
+            return
+
         try:
+            self._do_plot(df, p, title, trades, kospi_df)
+        except Exception as e:
+            logger.error(f"[CHART] plot 에러: {e}", exc_info=True)
             self.fig.clear()
-            self._crosshair_lines = []
-            self._crosshair_texts = []
-            self._axes_list = []
-            self._x_date_text = None
-            self._bg_cache = None
-
-            if df is None or df.empty or "close" not in df.columns:
-                ax = self.fig.add_subplot(111)
-                ax.text(0.5, 0.5, "데이터 없음", ha="center", va="center", fontsize=16)
-                self.canvas.draw()
-                return
-
-            # ── x축 준비 ──
-            if "date" in df.columns:
-                dates = pd.to_datetime(df["date"]).reset_index(drop=True)
-            elif isinstance(df.index, pd.DatetimeIndex):
-                dates = df.index.to_series().reset_index(drop=True)
-            else:
-                dates = pd.Series(pd.date_range("2020-01-01", periods=len(df)))
-
-            n = len(df)
-            x = np.arange(n)
-            self._x_data = x
-            self._date_labels = dates
-
-            o = df["open"].values.astype(float)
-            h = df["high"].values.astype(float)
-            lo = df["low"].values.astype(float)
-            c = df["close"].values.astype(float)
-
-            # ── JMA Slope → 퍼센트 변환 ──
-            slope_pct = None
-            if "jma_slope" in df.columns and "jma" in df.columns:
-                jma_vals = df["jma"].values.astype(float)
-                raw_slope = df["jma_slope"].values.astype(float)
-                prev_jma = np.roll(jma_vals, 1)
-                prev_jma[0] = np.nan
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    slope_pct = np.where(
-                        (prev_jma != 0) & (~np.isnan(prev_jma)),
-                        raw_slope / prev_jma * 100, 0.0
-                    )
-                slope_pct[0] = 0.0
-                slope_pct = np.nan_to_num(slope_pct, nan=0.0)
-
-            # ── GridSpec ──
-            gs = self.fig.add_gridspec(
-                6, 1, height_ratios=[3.5, 1, 1, 1, 1.5, 1], hspace=0.06
-            )
-            ax_price = self.fig.add_subplot(gs[0])
-            ax_vol   = self.fig.add_subplot(gs[1], sharex=ax_price)
-            ax_slope = self.fig.add_subplot(gs[2], sharex=ax_price)
-            ax_rsi   = self.fig.add_subplot(gs[3], sharex=ax_price)
-            ax_st    = self.fig.add_subplot(gs[4], sharex=ax_price)
-            ax_kospi = self.fig.add_subplot(gs[5], sharex=ax_price)
-
-            all_axes = [ax_price, ax_vol, ax_slope, ax_rsi, ax_st, ax_kospi]
-            self._axes_list = all_axes
-
-            def _date_formatter(val, pos):
-                idx = int(round(val))
-                if 0 <= idx < n:
-                    return dates.iloc[idx].strftime("%Y-%m-%d")
-                return ""
-
-            # =============================================
-            # 1) 캔들차트 + JMA(2색) + ST + 매매신호
-            # =============================================
-            self._draw_candlestick(ax_price, x, o, h, lo, c)
-
-            # JMA 오버레이 (상승=주황, 하락=보라)
-            if "jma" in df.columns and "jma_slope" in df.columns:
-                jma_v = df["jma"].values.astype(float)
-                jma_s = df["jma_slope"].values.astype(float)
-                for i in range(1, n):
-                    if np.isnan(jma_v[i]) or np.isnan(jma_v[i - 1]):
-                        continue
-                    clr = "#FF6600" if jma_s[i] >= 0 else "#9900CC"
-                    ax_price.plot(
-                        [x[i - 1], x[i]], [jma_v[i - 1], jma_v[i]],
-                        color=clr, linewidth=2.2, zorder=10, alpha=0.95
-                    )
-                ax_price.plot([], [], color="#FF6600", linewidth=2.2, label="JMA↑")
-                ax_price.plot([], [], color="#9900CC", linewidth=2.2, label="JMA↓")
-
-            # SuperTrend 라인
-            if "st" in df.columns and "st_dir" in df.columns:
-                st_vals = df["st"].values.astype(float)
-                st_dir_arr = df["st_dir"].values
-                for i in range(1, n):
-                    if np.isnan(st_vals[i]) or np.isnan(st_vals[i - 1]):
-                        continue
-                    clr = "#00AA00" if st_dir_arr[i] == 1 else "#CC0000"
-                    ax_price.plot(
-                        [x[i - 1], x[i]], [st_vals[i - 1], st_vals[i]],
-                        color=clr, linewidth=1.3, zorder=5, alpha=0.8
-                    )
-
-            # ── 매매 신호 마커 ──
-            # logger.info(f"[SIGNAL] trades received: {type(trades)}, count={len(trades) if trades else 0}")
-
-            if trades is not None and len(trades) > 0:
-                buy_x, buy_y = [], []
-                sell_x, sell_y = [], []
-
-                # 날짜 배열을 문자열로 변환 (가장 확실한 매칭)
-                dates_str = [str(d)[:10] for d in dates.values]
-                # logger.info(f"[SIGNAL] dates_str sample: {dates_str[:3]}...{dates_str[-1]}")
-
-                for ti, t in enumerate(trades):
-                    try:
-                        # entry_date → 문자열 10자리로 통일
-                        entry_str = str(t.entry_date)[:10]
-                        exit_str = str(t.exit_date)[:10] if t.exit_date is not None else None
-
-                        #logger.info(f"[SIGNAL] trade[{ti}]: entry={entry_str}, exit={exit_str}, "
-                        #            f"entry_price={t.entry_price}, exit_price={t.exit_price}")
-
-                        # 매수 인덱스 찾기
-                        b_idx = None
-                        for j, ds in enumerate(dates_str):
-                            if ds == entry_str:
-                                b_idx = j
-                                break
-
-                        if b_idx is not None:
-                            buy_x.append(b_idx)
-                            buy_y.append(float(t.entry_price))
-                            # logger.info(f"[SIGNAL] BUY marker at idx={b_idx}, price={t.entry_price}")
-
-                            # 매도 인덱스 찾기
-                            if exit_str and t.exit_price:
-                                s_idx = None
-                                for j, ds in enumerate(dates_str):
-                                    if ds == exit_str:
-                                        s_idx = j
-                                        break
-
-                                if s_idx is not None:
-                                    sell_x.append(s_idx)
-                                    sell_y.append(float(t.exit_price))
-                                    # logger.info(f"[SIGNAL] SELL marker at idx={s_idx}, price={t.exit_price}")
-
-                                    # 배경 span
-                                    bg = "#CCFFCC" if t.pnl_pct > 0 else "#FFCCCC"
-                                    ax_price.axvspan(
-                                        b_idx - 0.5, s_idx + 0.5,
-                                        alpha=0.12, color=bg, zorder=0
-                                    )
-                        else:
-                            logger.warning(f"[SIGNAL] entry date NOT FOUND: {entry_str}")
-
-                    except Exception as ex:
-                        logger.error(f"[SIGNAL] Trade marker error: {ex}")
-                        continue
-
-                # 매수 마커
-                if buy_x:
-                    ax_price.scatter(
-                        buy_x, buy_y,
-                        marker="^", s=150, c="#00CC00", edgecolors="#006600",
-                        linewidths=1.2, zorder=15, label=f"매수({len(buy_x)})"
-                    )
-                # 매도 마커
-                if sell_x:
-                    ax_price.scatter(
-                        sell_x, sell_y,
-                        marker="v", s=150, c="#FF3333", edgecolors="#990000",
-                        linewidths=1.2, zorder=15, label=f"매도({len(sell_x)})"
-                    )
-
-                # logger.info(f"[SIGNAL] RESULT: buy={len(buy_x)}, sell={len(sell_x)}")
-
-            ax_price.set_title(title or "SuperTrend + JMA", fontsize=11, fontweight="bold")
-            ax_price.legend(loc="upper left", fontsize=7, ncol=6)
-            ax_price.grid(True, alpha=0.25, linewidth=0.5)
-            ax_price.set_ylabel("가격", fontsize=8)
-
-            # =============================================
-            # 2) 거래량
-            # =============================================
-            if "volume" in df.columns:
-                vol = df["volume"].values.astype(float)
-                vc = ["#CC3333" if c[i] < c[max(i - 1, 0)] else "#3333CC"
-                       for i in range(n)]
-                ax_vol.bar(x, vol, color=vc, alpha=0.6, width=0.7)
-            ax_vol.set_ylabel("거래량", fontsize=7)
-            ax_vol.grid(True, alpha=0.2, linewidth=0.5)
-
-            # =============================================
-            # 3) JMA Slope (%)
-            # =============================================
-            if slope_pct is not None:
-                ax_slope.bar(x, np.where(slope_pct > 0, slope_pct, 0),
-                             color="#00CC00", alpha=0.7, width=0.7)
-                ax_slope.bar(x, np.where(slope_pct < 0, slope_pct, 0),
-                             color="#CC0000", alpha=0.7, width=0.7)
-                ax_slope.axhline(y=0, color="black", linewidth=0.8)
-                ax_slope.axhline(y=0.3, color="#00AA00", linestyle="--",
-                                 linewidth=0.6, alpha=0.5)
-                ax_slope.axhline(y=-0.3, color="#CC0000", linestyle="--",
-                                 linewidth=0.6, alpha=0.5)
-                ax_slope.axhline(y=1.0, color="#006600", linestyle=":",
-                                 linewidth=0.5, alpha=0.4)
-                ax_slope.axhline(y=-1.0, color="#990000", linestyle=":",
-                                 linewidth=0.5, alpha=0.4)
-                valid = slope_pct[~np.isnan(slope_pct)]
-                if len(valid) > 0:
-                    p5, p95 = np.percentile(valid, [2, 98])
-                    margin = max(abs(p5), abs(p95)) * 1.3
-                    margin = max(margin, 0.5)
-                    ax_slope.set_ylim(-margin, margin)
-            ax_slope.set_ylabel("JMA Slope(%)", fontsize=7)
-            ax_slope.grid(True, alpha=0.2, linewidth=0.5)
-
-            # =============================================
-            # 4) RSI
-            # =============================================
-            if "rsi" in df.columns:
-                ax_rsi.plot(x, df["rsi"].values, color="#8800AA",
-                            linewidth=1.0, label="RSI(14)")
-                if "rsi_fast" in df.columns:
-                    ax_rsi.plot(x, df["rsi_fast"].values,
-                                color="#00AACC", linewidth=0.8, alpha=0.7, label="RSI(5)")
-                rsi_os = p.get("rsi_os", 35)
-                rsi_ob = p.get("rsi_ob", 80)
-                ax_rsi.axhline(y=rsi_os, color="green", linestyle="--", alpha=0.5)
-                ax_rsi.axhline(y=rsi_ob, color="red", linestyle="--", alpha=0.5)
-                ax_rsi.fill_between(x, rsi_os, rsi_ob, alpha=0.03, color="gray")
-                ax_rsi.set_ylim(0, 100)
-                ax_rsi.legend(fontsize=7, loc="upper left")
-            ax_rsi.set_ylabel("RSI", fontsize=7)
-            ax_rsi.grid(True, alpha=0.2, linewidth=0.5)
-
-            # =============================================
-            # 5) SuperTrend 영역
-            # =============================================
-            if "st_dir" in df.columns:
-                st_dir_vals = df["st_dir"].values
-                ax_st.plot(x, c, color="#333333", linewidth=0.8)
-                for i in range(n):
-                    clr = "green" if st_dir_vals[i] == 1 else "red"
-                    ax_st.axvspan(x[i] - 0.5, x[i] + 0.5, alpha=0.12, color=clr)
-            ax_st.set_ylabel("SuperTrend", fontsize=7)
-            ax_st.grid(True, alpha=0.2, linewidth=0.5)
-
-            # =============================================
-            # 6) KOSPI 비교
-            # =============================================
-            if kospi_df is not None and "close" in kospi_df.columns and len(kospi_df) > 0:
-                try:
-                    stock_norm = c / c[0] * 100
-                    k_close = kospi_df["close"].values.astype(float)
-                    k_norm = k_close / k_close[0] * 100
-                    k_len = min(len(k_norm), n)
-                    ax_kospi.plot(x[:k_len], stock_norm[:k_len],
-                                 color="#FF4444", linewidth=1.0, label="종목")
-                    ax_kospi.plot(x[:k_len], k_norm[:k_len],
-                                 color="#4444FF", linewidth=1.0, label="KOSPI")
-                    ax_kospi.axhline(y=100, color="gray", linestyle="--", alpha=0.3)
-                    ax_kospi.legend(fontsize=7, loc="upper left")
-                except Exception:
-                    ax_kospi.text(0.5, 0.5, "비교 실패", ha="center", va="center", fontsize=8)
-            else:
-                ax_kospi.text(0.5, 0.5, "KOSPI 없음", ha="center", va="center",
-                              fontsize=9, alpha=0.5)
-            ax_kospi.set_ylabel("상대강도", fontsize=7)
-            ax_kospi.grid(True, alpha=0.2, linewidth=0.5)
-
-            # ── x축 라벨 ──
-            for ax in [ax_price, ax_vol, ax_slope, ax_rsi, ax_st]:
-                ax.tick_params(labelbottom=False)
-            ax_kospi.xaxis.set_major_formatter(mticker.FuncFormatter(_date_formatter))
-            ax_kospi.tick_params(axis="x", rotation=25, labelsize=7)
-            ax_price.set_xlim(-1, n)
-
-            # 크로스헤어 초기화
-            self._init_crosshair(all_axes)
-
-            try:
-                self.fig.tight_layout()
-            except Exception:
-                pass
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor('#1e1e2e')
+            ax.text(0.5, 0.5, f'차트 렌더링 에러:\n{e}',
+                    transform=ax.transAxes, ha='center', va='center',
+                    fontsize=12, color='#ff6666', wrap=True)
             self.canvas.draw()
 
-        except Exception as e:
-            logger.error(f"ChartWidget error: {e}\n{traceback.format_exc()}")
-            try:
-                self.fig.clear()
-                ax = self.fig.add_subplot(111)
-                ax.text(0.5, 0.5, f"차트 오류: {e}", ha="center", va="center")
-                self.canvas.draw()
-            except Exception:
-                pass
+    def _do_plot(self, df, p, title, trades, kospi_df):
+        """실제 차트 렌더링 로직."""
+        df = df.copy().reset_index(drop=True)
 
-    # ================================================================
-    #  캔들스틱
-    # ================================================================
-    def _draw_candlestick(self, ax, x, o, h, lo, c):
-        up = c >= o
-        dn = ~up
-        if np.any(up):
-            body_h = np.where(up, c - o, 0.0)
-            body_h = np.maximum(body_h, (h - lo) * 0.005)
-            ax.bar(x[up], body_h[up], bottom=o[up], width=0.6,
-                   color="#FF3333", edgecolor="#CC0000", linewidth=0.5, zorder=4)
-        if np.any(dn):
-            body_h = np.where(dn, o - c, 0.0)
-            body_h = np.maximum(body_h, (h - lo) * 0.005)
-            ax.bar(x[dn], body_h[dn], bottom=c[dn], width=0.6,
-                   color="#3333FF", edgecolor="#0000CC", linewidth=0.5, zorder=4)
-        top_body = np.maximum(o, c)
-        ax.vlines(x, top_body, h, colors=np.where(up, "#CC0000", "#0000CC"),
-                  linewidth=0.8, zorder=3)
-        bot_body = np.minimum(o, c)
-        ax.vlines(x, lo, bot_body, colors=np.where(up, "#CC0000", "#0000CC"),
-                  linewidth=0.8, zorder=3)
+        # ── x축 날짜 준비 ──
+        if 'date' in df.columns:
+            dates = pd.to_datetime(df['date'])
+        elif isinstance(df.index, pd.DatetimeIndex):
+            dates = df.index.to_series().reset_index(drop=True)
+        else:
+            dates = pd.Series(range(len(df)))
 
-    # ================================================================
-    #  크로스헤어 (blitting으로 성능 개선)
-    # ================================================================
-    def _init_crosshair(self, axes):
-        self._crosshair_lines = []
-        self._crosshair_texts = []
+        x = np.arange(len(df))
+        self._x_dates = dates.tolist()
+
+        # ── JMA slope_pct 계산 ──
+        if 'jma' in df.columns and 'jma_slope' in df.columns:
+            jma_shifted = df['jma'].shift(1)
+            df['slope_pct'] = np.where(
+                jma_shifted.abs() > 1e-9,
+                (df['jma_slope'] / jma_shifted) * 100,
+                0.0
+            )
+        else:
+            df['slope_pct'] = 0.0
+
+        # ── GridSpec: 6행 ──
+        gs = GridSpec(6, 1, figure=self.fig,
+                      height_ratios=[3.5, 1, 1, 1, 1.5, 1],
+                      hspace=0.05)
+
+        style = dict(facecolor='#1e1e2e')
+        ax_price = self.fig.add_subplot(gs[0], **style)
+        ax_vol   = self.fig.add_subplot(gs[1], sharex=ax_price, **style)
+        ax_slope = self.fig.add_subplot(gs[2], sharex=ax_price, **style)
+        ax_rsi   = self.fig.add_subplot(gs[3], sharex=ax_price, **style)
+        ax_st    = self.fig.add_subplot(gs[4], sharex=ax_price, **style)
+        ax_kospi = self.fig.add_subplot(gs[5], sharex=ax_price, **style)
+
+        axes = [ax_price, ax_vol, ax_slope, ax_rsi, ax_st, ax_kospi]
+        self._axes_list = axes
 
         for ax in axes:
-            vline = ax.axvline(x=0, color="#888888", linewidth=0.7,
-                               linestyle="--", alpha=0.7, visible=False, animated=True)
-            hline = ax.axhline(y=0, color="#888888", linewidth=0.7,
-                               linestyle="--", alpha=0.7, visible=False, animated=True)
-            self._crosshair_lines.append((vline, hline))
+            ax.set_facecolor('#1e1e2e')
+            ax.tick_params(colors='#aaa', labelsize=7)
+            ax.grid(True, alpha=0.15, color='#555')
+            for spine in ax.spines.values():
+                spine.set_color('#444')
 
-            y_text = ax.text(
-                1.01, 0.5, "", transform=ax.get_yaxis_transform(),
-                fontsize=7, color="white", ha="left", va="center",
-                bbox=dict(boxstyle="round,pad=0.2", fc="#444444", ec="none", alpha=0.85),
-                visible=False, zorder=100, clip_on=False, animated=True
-            )
-            self._crosshair_texts.append(y_text)
+        # ── 1) 캔들스틱 + JMA + ST ──
+        self._draw_candlestick(ax_price, df, x)
+        self._draw_jma_overlay(ax_price, df, x)
+        self._draw_st_overlay(ax_price, df, x)
 
-        self._x_date_text = axes[-1].text(
-            0.5, -0.15, "", transform=axes[-1].get_xaxis_transform(),
-            fontsize=8, color="white", ha="center", va="top",
-            bbox=dict(boxstyle="round,pad=0.3", fc="#333333", ec="none", alpha=0.9),
-            visible=False, zorder=100, clip_on=False, animated=True
-        )
+        if trades:
+            self._draw_trade_markers(ax_price, df, x, dates, trades)
 
-    def _on_draw(self, event):
-        """draw 이벤트 발생 시 배경 캐시 저장 (blitting용)"""
-        self._bg_cache = self.canvas.copy_from_bbox(self.fig.bbox)
+        # 횡보 구간 표시 (추가)
+        self._draw_sideways_zones(ax_price, df, x)   ####추가됨
+
+        ax_price.set_title(title or '가격 차트', color='#eee',
+                           fontsize=11, pad=8, loc='left')
+        ax_price.set_ylabel('가격', color='#aaa', fontsize=8)
+
+        # ── 2) 볼륨 ──
+        if 'volume' in df.columns:
+            colors_vol = ['#26a69a' if df['close'].iloc[i] >= df['open'].iloc[i]
+                          else '#ef5350' for i in range(len(df))]
+            ax_vol.bar(x, df['volume'], color=colors_vol, alpha=0.7, width=0.7)
+        ax_vol.set_ylabel('거래량', color='#aaa', fontsize=8)
+        ax_vol.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda v, _: f'{v/1e6:.1f}M' if v >= 1e6
+                                  else f'{v/1e3:.0f}K' if v >= 1e3 else f'{v:.0f}'))
+
+        # ── 3) JMA 슬로프 (%) ──
+        sp = df['slope_pct']
+        colors_slope = ['#26a69a' if v >= 0 else '#ef5350' for v in sp]
+        ax_slope.bar(x, sp, color=colors_slope, alpha=0.8, width=0.7)
+        ax_slope.axhline(0, color='#666', linewidth=0.5)
+        abs_max = max(sp.abs().max(), 0.5) * 1.2
+        ax_slope.set_ylim(-abs_max, abs_max)
+        ax_slope.set_ylabel('JMA 슬로프 %', color='#aaa', fontsize=8)
+
+        # ── 4) RSI ──
+        if 'rsi' in df.columns:
+            ax_rsi.plot(x, df['rsi'], color='#ab47bc', linewidth=1, label='RSI')
+            if 'rsi_fast' in df.columns:
+                ax_rsi.plot(x, df['rsi_fast'], color='#ffa726',
+                            linewidth=0.8, alpha=0.7, label='RSI Fast')
+            rsi_ob = p.get('rsi_ob', 80)
+            rsi_os = p.get('rsi_os', 35)
+            ax_rsi.axhline(rsi_ob, color='#ef5350', linewidth=0.5,
+                           linestyle='--', alpha=0.6)
+            ax_rsi.axhline(rsi_os, color='#26a69a', linewidth=0.5,
+                           linestyle='--', alpha=0.6)
+            ax_rsi.axhline(50, color='#666', linewidth=0.3, linestyle=':')
+            ax_rsi.set_ylim(0, 100)
+            ax_rsi.legend(loc='upper left', fontsize=6,
+                          facecolor='#1e1e2e', edgecolor='#444',
+                          labelcolor='#ccc')
+        ax_rsi.set_ylabel('RSI', color='#aaa', fontsize=8)
+
+        # ── 5) SuperTrend ──
+        if 'st' in df.columns:
+            ax_st.plot(x, df['close'], color='#888', linewidth=0.8,
+                       alpha=0.5, label='종가')
+            ax_st.plot(x, df['st'], color='#42a5f5', linewidth=1.2,
+                       label='SuperTrend')
+            if 'st_dir' in df.columns:
+                up_mask = df['st_dir'] == 1
+                dn_mask = df['st_dir'] == -1
+                ax_st.fill_between(x, df['st'], df['close'],
+                                   where=up_mask, alpha=0.1, color='#26a69a')
+                ax_st.fill_between(x, df['st'], df['close'],
+                                   where=dn_mask, alpha=0.1, color='#ef5350')
+            ax_st.legend(loc='upper left', fontsize=6,
+                         facecolor='#1e1e2e', edgecolor='#444',
+                         labelcolor='#ccc')
+        ax_st.set_ylabel('ST', color='#aaa', fontsize=8)
+
+        # ── 6) KOSPI 비교 ──
+        if kospi_df is not None and not kospi_df.empty:
+            self._draw_kospi_comparison(ax_kospi, df, kospi_df, x, dates)
+        else:
+            ax_kospi.text(0.5, 0.5, 'KOSPI 데이터 없음',
+                          transform=ax_kospi.transAxes,
+                          ha='center', va='center', fontsize=9, color='#666')
+        ax_kospi.set_ylabel('비교 (기준=100)', color='#aaa', fontsize=8)
+
+        # ── x축 설정 ──
+        for ax in axes[:-1]:
+            ax.tick_params(labelbottom=False)
+
+        # 마지막 축에 날짜 라벨
+        tick_step = max(1, len(x) // 10)
+        tick_positions = x[::tick_step]
+        tick_labels = []
+        for i in tick_positions:
+            if i < len(self._x_dates):
+                dt = self._x_dates[i]
+                if hasattr(dt, 'strftime'):
+                    tick_labels.append(dt.strftime('%m/%d'))
+                else:
+                    tick_labels.append(str(dt))
+            else:
+                tick_labels.append('')
+        ax_kospi.set_xticks(tick_positions)
+        ax_kospi.set_xticklabels(tick_labels, rotation=45, fontsize=7, color='#aaa')
+
+        # ── 크로스헤어 초기화 ──
+        self._init_crosshair(axes)
+
+        # ── 레이아웃 ──
+        try:
+            self.fig.subplots_adjust(left=0.08, right=0.95, top=0.95,
+                                     bottom=0.06, hspace=0.05)
+        except Exception:
+            pass
+
+        self.canvas.draw()
+        # blitting 용 배경 저장
+        try:
+            self._bg = self.canvas.copy_from_bbox(self.fig.bbox)
+        except Exception:
+            self._bg = None
+
+    # ─────────────── 캔들스틱 ───────────────
+    def _draw_candlestick(self, ax, df, x):
+        """OHLC 캔들스틱을 직접 그린다."""
+        opens = df['open'].values
+        highs = df['high'].values
+        lows = df['low'].values
+        closes = df['close'].values
+
+        for i in range(len(df)):
+            o, h, l, c = opens[i], highs[i], lows[i], closes[i]
+            if np.isnan(o) or np.isnan(c):
+                continue
+
+            color = '#26a69a' if c >= o else '#ef5350'
+            # 심지 (wick)
+            ax.plot([x[i], x[i]], [l, h], color=color, linewidth=0.6)
+            # 몸통 (body)
+            body_low = min(o, c)
+            body_high = max(o, c)
+            body_height = max(body_high - body_low, (h - l) * 0.01)  # 최소 높이
+            ax.bar(x[i], body_height, bottom=body_low, width=0.7,
+                   color=color, edgecolor=color, linewidth=0.3)
+
+    # ─────────────── JMA 오버레이 ───────────────
+    def _draw_jma_overlay(self, ax, df, x):
+        """JMA 라인을 가격 차트에 오버레이."""
+        if 'jma' not in df.columns:
+            return
+
+        jma = df['jma'].values
+        valid = ~np.isnan(jma)
+
+        if 'jma_slope' in df.columns:
+            slope = df['jma_slope'].values
+            # 상승/하락 구간별로 색상 구분
+            up = slope >= 0
+            dn = slope < 0
+
+            # 상승 구간
+            for start, end in self._get_segments(up & valid):
+                seg_x = x[start:end+1]
+                seg_y = jma[start:end+1]
+                ax.plot(seg_x, seg_y, color='#ff9800', linewidth=1.8, alpha=0.9)
+
+            # 하락 구간
+            for start, end in self._get_segments(dn & valid):
+                seg_x = x[start:end+1]
+                seg_y = jma[start:end+1]
+                ax.plot(seg_x, seg_y, color='#ab47bc', linewidth=1.8, alpha=0.9)
+        else:
+            # slope 정보 없으면 단색
+            ax.plot(x[valid], jma[valid], color='#ff9800', linewidth=1.5,
+                    alpha=0.8, label='JMA')
+
+    # ─────────────── ST 오버레이 ───────────────
+    def _draw_st_overlay(self, ax, df, x):
+        """SuperTrend 라인을 가격 차트에 오버레이."""
+        if 'st' not in df.columns:
+            return
+
+        st = df['st'].values
+        valid = ~np.isnan(st)
+
+        if 'st_dir' in df.columns:
+            st_dir = df['st_dir'].values
+            up = (st_dir == 1) & valid
+            dn = (st_dir == -1) & valid
+
+            for start, end in self._get_segments(up):
+                ax.plot(x[start:end+1], st[start:end+1],
+                        color='#26a69a', linewidth=1.2, linestyle='--', alpha=0.7)
+            for start, end in self._get_segments(dn):
+                ax.plot(x[start:end+1], st[start:end+1],
+                        color='#ef5350', linewidth=1.2, linestyle='--', alpha=0.7)
+        else:
+            ax.plot(x[valid], st[valid], color='#42a5f5', linewidth=1,
+                    alpha=0.6, linestyle='--')
+
+    # ─────────────── 매매 신호 마커 ───────────────
+    def _draw_trade_markers(self, ax, df, x, dates, trades):
+        """Buy/Sell 마커를 가격 차트에 표시."""
+        if not trades:
+            return
+
+        # ===== 긴급 디버그 =====
+        sample_date = dates[0] if len(dates) > 0 else None
+        t0 = trades[0]
+        ed = getattr(t0, 'entry_date', None)
+        logger.info(f"[CHART DEBUG] dates[0]: type={type(sample_date).__name__}, "
+                     f"val='{sample_date}', str10='{str(sample_date)[:10]}'")
+        logger.info(f"[CHART DEBUG] trade.entry: type={type(ed).__name__}, "
+                     f"val='{ed}', str10='{str(ed)[:10]}'")
+
+
+        # date_to_x 매핑 구축
+        date_to_x = {}
+        for i, dt in enumerate(dates):
+            try:
+                key = str(dt)[:10]
+                date_to_x[key] = i
+            except Exception:
+                continue
+
+        logger.info(f"[CHART DEBUG] date_to_x keys (first 5): "
+                     f"{list(date_to_x.keys())[:5]}")
+        logger.info(f"[CHART DEBUG] looking for: '{str(ed)[:10]}' "
+                     f"-> found={str(ed)[:10] in date_to_x}")
+        # ===== 디버그 끝 =====
+
+        buy_x, buy_y = [], []
+        sell_x, sell_y = [], []
+
+        for t in trades:
+            entry_date = getattr(t, 'entry_date', None)
+            entry_price = getattr(t, 'entry_price', None)
+            if entry_date is not None and entry_price is not None:
+                key = str(entry_date)[:10]
+                if key in date_to_x:
+                    buy_x.append(date_to_x[key])
+                    buy_y.append(float(entry_price))
+
+            exit_date = getattr(t, 'exit_date', None)
+            exit_price = getattr(t, 'exit_price', None)
+            if exit_date is not None and exit_price is not None:
+                key = str(exit_date)[:10]
+                if key in date_to_x:
+                    sell_x.append(date_to_x[key])
+                    sell_y.append(float(exit_price))
+
+        if buy_x:
+            ax.scatter(buy_x, buy_y, marker='^', color='#00e676',
+                       s=80, zorder=10, edgecolors='white', linewidths=0.5,
+                       label=f'Buy ({len(buy_x)})')
+            for bx, by in zip(buy_x, buy_y):
+                ax.annotate('B', (bx, by), textcoords="offset points",
+                            xytext=(0, -14), fontsize=6, color='#00e676',
+                            ha='center', fontweight='bold')
+
+        if sell_x:
+            ax.scatter(sell_x, sell_y, marker='v', color='#ff1744',
+                       s=80, zorder=10, edgecolors='white', linewidths=0.5,
+                       label=f'Sell ({len(sell_x)})')
+            for sx, sy in zip(sell_x, sell_y):
+                ax.annotate('S', (sx, sy), textcoords="offset points",
+                            xytext=(0, 12), fontsize=6, color='#ff1744',
+                            ha='center', fontweight='bold')
+
+        for t in trades:
+            ed = getattr(t, 'entry_date', None)
+            xd = getattr(t, 'exit_date', None)
+            if ed is None or xd is None:
+                continue
+            ek, xk = str(ed)[:10], str(xd)[:10]
+            if ek in date_to_x and xk in date_to_x:
+                x1, x2 = date_to_x[ek], date_to_x[xk]
+                pnl = getattr(t, 'pnl', 0)
+                color = '#26a69a' if pnl >= 0 else '#ef5350'
+                ax.axvspan(x1 - 0.5, x2 + 0.5, alpha=0.06, color=color)
+
+        if buy_x or sell_x:
+            ax.legend(loc='upper left', fontsize=7,
+                      facecolor='#1e1e2e', edgecolor='#444',
+                      labelcolor='#ccc')
+
+        logger.info(f"[CHART] 매매 마커: Buy={len(buy_x)}, Sell={len(sell_x)}")
+
+
+    # ─────────────── 횡보 구간 표시 ───────────────
+    def _draw_sideways_zones(self, ax, df, x):
+        """
+        횡보 구간을 가격 차트에 회색 반투명 배경으로 표시.
+        signals.py의 _is_sideways와 동일한 로직 (미래 참조 없음).
+        """
+        if len(df) < 20:
+            return
+
+        try:
+            sideways_mask = np.zeros(len(df), dtype=bool)
+
+            # 각 봉에서 과거 데이터만으로 횡보 판단
+            for i in range(20, len(df)):
+                count = 0
+
+                # 조건 1: ATR 축소 (변동성 감소)
+                if 'atr' in df.columns:
+                    atr_now = df['atr'].iloc[i]
+                    atr_avg = df['atr'].iloc[max(0, i - 20):i].mean()
+                    if atr_avg > 0 and not np.isnan(atr_now):
+                        if atr_now < atr_avg * 0.7:
+                            count += 1
+
+                # 조건 2: JMA slope 방향 진동 (추세 부재)
+                if 'jma_slope' in df.columns:
+                    slope_window = df['jma_slope'].iloc[max(0, i - 10):i + 1]
+                    if len(slope_window) >= 5:
+                        signs = (slope_window > 0).astype(int)
+                        flips = signs.diff().abs().sum()
+                        if flips >= 3:
+                            count += 1
+
+                # 조건 3: 일중 변동폭 축소 (좁은 레인지)
+                if all(c in df.columns for c in ['high', 'low', 'close']):
+                    window = df.iloc[max(0, i - 20):i + 1]
+                    if len(window) >= 10:
+                        avg_close = window['close'].mean()
+                        if avg_close > 0:
+                            range_pct = (
+                                (window['high'] - window['low']) / avg_close
+                            ).mean() * 100
+                            if range_pct < 2.0:
+                                count += 1
+
+                sideways_mask[i] = (count >= 2)
+
+            # 연속 구간을 회색 배경으로 표시
+            segments = self._get_segments(sideways_mask)
+            for start, end in segments:
+                ax.axvspan(
+                    x[start] - 0.5, x[end] + 0.5,
+                    alpha=0.12, color='#9e9e9e',
+                    zorder=0,
+                )
+
+            # 범례에 횡보 구간 추가
+            if segments:
+                from matplotlib.patches import Patch
+                sideways_patch = Patch(
+                    facecolor='#9e9e9e', alpha=0.3,
+                    label=f'횡보 ({len(segments)})'
+                )
+                handles, labels = ax.get_legend_handles_labels()
+                handles.append(sideways_patch)
+                labels.append(f'횡보 ({len(segments)})')
+                ax.legend(
+                    handles, labels,
+                    loc='upper left', fontsize=7,
+                    facecolor='#1e1e2e', edgecolor='#444',
+                    labelcolor='#ccc',
+                )
+
+            logger.info(f"[CHART] 횡보 구간: {len(segments)}개")
+
+        except Exception as e:
+            logger.warning(f"[CHART] 횡보 구간 표시 에러: {e}")
+
+
+
+
+    # ─────────────── KOSPI 비교 ───────────────
+    def _draw_kospi_comparison(self, ax, df, kospi_df, x, dates):
+        """KOSPI와 종목의 정규화 비교 차트."""
+        try:
+            kospi_df = kospi_df.copy()
+
+            # kospi_df 날짜를 문자열 키로 변환
+            if 'date' in kospi_df.columns:
+                kospi_df['_date_key'] = kospi_df['date'].apply(lambda d: str(d)[:10])
+            elif isinstance(kospi_df.index, pd.DatetimeIndex):
+                kospi_df = kospi_df.reset_index()
+                kospi_df.rename(columns={kospi_df.columns[0]: 'date'}, inplace=True)
+                kospi_df['_date_key'] = kospi_df['date'].apply(lambda d: str(d)[:10])
+            else:
+                ax.text(0.5, 0.5, 'KOSPI 날짜 컬럼 없음', transform=ax.transAxes,
+                        ha='center', fontsize=9, color='#666')
+                return
+
+            # 종목 날짜도 문자열 키로
+            stock_date_keys = [str(d)[:10] for d in dates]
+
+            # kospi 종가를 종목 날짜 순서에 맞춰 매핑
+            kospi_map = dict(zip(kospi_df['_date_key'], kospi_df['close']))
+            kospi_matched = []
+            for dk in stock_date_keys:
+                kospi_matched.append(kospi_map.get(dk, np.nan))
+
+            kospi_series = pd.Series(kospi_matched)
+            kospi_series = kospi_series.ffill().bfill()
+
+            if kospi_series.notna().sum() == 0:
+                ax.text(0.5, 0.5, 'KOSPI 매칭 실패', transform=ax.transAxes,
+                        ha='center', fontsize=9, color='#666')
+                return
+
+            # 정규화 (기준=100)
+            stock_first = df['close'].iloc[0]
+            kospi_first = kospi_series.dropna().iloc[0]
+
+            if stock_first == 0 or kospi_first == 0:
+                ax.text(0.5, 0.5, 'KOSPI 정규화 실패', transform=ax.transAxes,
+                        ha='center', fontsize=9, color='#666')
+                return
+
+            stock_norm = (df['close'] / stock_first) * 100
+            kospi_norm = (kospi_series / kospi_first) * 100
+
+            ax.plot(x, stock_norm.values, color='#ffa726', linewidth=1.2, label='종목')
+            ax.plot(x, kospi_norm.values, color='#42a5f5', linewidth=1.0,
+                    alpha=0.7, label='KOSPI')
+            ax.axhline(100, color='#666', linewidth=0.3, linestyle=':')
+            ax.legend(loc='upper left', fontsize=6,
+                      facecolor='#1e1e2e', edgecolor='#444', labelcolor='#ccc')
+
+        except Exception as e:
+            logger.warning(f"[CHART] KOSPI 비교 에러: {e}")
+            ax.text(0.5, 0.5, f'KOSPI 비교 에러', transform=ax.transAxes,
+                    ha='center', fontsize=9, color='#666')
+
+    # ─────────────── 크로스헤어 ───────────────
+    def _init_crosshair(self, axes):
+        """크로스헤어용 라인/텍스트 객체 초기화."""
+        self._crosshair_lines.clear()
+        self._crosshair_texts.clear()
+
+        labels = ['가격', '거래량', '슬로프%', 'RSI', 'ST', 'KOSPI']
+
+        for i, ax in enumerate(axes):
+            hline = ax.axhline(0, color='#ffeb3b', linewidth=0.5,
+                               alpha=0.6, visible=False)
+            vline = ax.axvline(0, color='#ffeb3b', linewidth=0.5,
+                               alpha=0.6, visible=False)
+            self._crosshair_lines.append((hline, vline))
+
+            # y값 텍스트 (오른쪽)
+            txt_y = ax.text(1.01, 0.5, '', transform=ax.transAxes,
+                            fontsize=7, color='#ffeb3b',
+                            ha='left', va='center', visible=False,
+                            bbox=dict(boxstyle='round,pad=0.2',
+                                      facecolor='#333', alpha=0.8,
+                                      edgecolor='#ffeb3b'))
+            self._crosshair_texts.append(txt_y)
+
+        # 날짜 텍스트 (하단 축 아래)
+        self._date_text = axes[-1].text(
+            0.5, -0.15, '', transform=axes[-1].transAxes,
+            fontsize=8, color='#ffeb3b', ha='center', va='top',
+            visible=False,
+            bbox=dict(boxstyle='round,pad=0.2',
+                      facecolor='#333', alpha=0.8, edgecolor='#ffeb3b'))
 
     def _on_mouse_move(self, event):
-        if (event.inaxes is None or not self._crosshair_lines
-                or self._x_data is None or self._date_labels is None
-                or self._bg_cache is None):
-            self._hide_crosshair()
+        """마우스 이동 시 크로스헤어 업데이트."""
+        if not self._axes_list or not self._crosshair_lines:
             return
 
-        x_val = event.xdata
-        y_val = event.ydata
-        if x_val is None or y_val is None:
-            self._hide_crosshair()
-            return
-
-        n = len(self._x_data)
-        idx = int(round(x_val))
-        if idx < 0 or idx >= n:
+        if event.inaxes is None or event.xdata is None:
             self._hide_crosshair()
             return
 
         try:
-            date_str = self._date_labels.iloc[idx].strftime("%Y-%m-%d")
-        except Exception:
-            date_str = ""
+            xi = int(round(event.xdata))
+            if xi < 0 or xi >= len(self._x_dates):
+                self._hide_crosshair()
+                return
 
-        # 배경 복원 (blitting)
-        self.canvas.restore_region(self._bg_cache)
+            # 배경 복원
+            if self._bg is not None:
+                self.canvas.restore_region(self._bg)
 
-        for i, (vline, hline) in enumerate(self._crosshair_lines):
-            vline.set_xdata([x_val])
-            vline.set_visible(True)
-            self._axes_list[i].draw_artist(vline)
-
-            if self._axes_list[i] == event.inaxes:
-                hline.set_ydata([y_val])
-                hline.set_visible(True)
-                if i == 2:
-                    txt = f"{y_val:.2f}%"
-                elif i == 3:
-                    txt = f"{y_val:.1f}"
-                else:
-                    txt = f"{y_val:,.0f}"
-                self._crosshair_texts[i].set_position((1.01, y_val))
-                self._crosshair_texts[i].set_text(txt)
-                self._crosshair_texts[i].set_visible(True)
-                self._crosshair_texts[i].set_transform(
-                    self._axes_list[i].get_yaxis_transform()
-                )
-                self._axes_list[i].draw_artist(hline)
-                self._axes_list[i].draw_artist(self._crosshair_texts[i])
+            # 날짜 텍스트
+            dt = self._x_dates[xi]
+            if hasattr(dt, 'strftime'):
+                date_str = dt.strftime('%Y-%m-%d')
             else:
-                hline.set_visible(False)
-                self._crosshair_texts[i].set_visible(False)
+                date_str = str(dt)[:10]
 
-        if self._x_date_text:
-            self._x_date_text.set_position((x_val, -0.15))
-            self._x_date_text.set_text(date_str)
-            self._x_date_text.set_visible(True)
-            self._x_date_text.set_transform(self._axes_list[-1].get_xaxis_transform())
-            self._axes_list[-1].draw_artist(self._x_date_text)
+            self._date_text.set_text(date_str)
+            self._date_text.set_visible(True)
 
-        self.canvas.blit(self.fig.bbox)
+            format_funcs = [
+                lambda y: f'{y:,.0f}',                                          # 가격
+                lambda y: f'{y/1e6:.1f}M' if abs(y) >= 1e6 else f'{y:,.0f}',  # 볼륨
+                lambda y: f'{y:.2f}%',                                          # 슬로프
+                lambda y: f'{y:.1f}',                                           # RSI
+                lambda y: f'{y:,.0f}',                                          # ST
+                lambda y: f'{y:.1f}',                                           # KOSPI
+            ]
 
-    def _on_mouse_leave(self, event):
-        self._hide_crosshair()
+            for i, ax in enumerate(self._axes_list):
+                hline, vline = self._crosshair_lines[i]
+                txt = self._crosshair_texts[i]
+
+                # 수직선은 모든 축에 표시
+                vline.set_xdata([xi])
+                vline.set_visible(True)
+
+                if event.inaxes == ax:
+                    # 마우스가 이 축 위에 있으면 수평선 + y값 표시
+                    y_val = event.ydata
+                    hline.set_ydata([y_val])
+                    hline.set_visible(True)
+
+                    try:
+                        fmt = format_funcs[i]
+                        txt.set_text(fmt(y_val))
+                    except Exception:
+                        txt.set_text(f'{y_val:.2f}')
+                    txt.set_visible(True)
+                else:
+                    hline.set_visible(False)
+                    txt.set_visible(False)
+
+                # artist 그리기
+                ax.draw_artist(vline)
+                if hline.get_visible():
+                    ax.draw_artist(hline)
+                if txt.get_visible():
+                    ax.draw_artist(txt)
+
+            # 날짜 텍스트 그리기
+            self._axes_list[-1].draw_artist(self._date_text)
+            self.canvas.blit(self.fig.bbox)
+
+        except Exception:
+            pass  # 크로스헤어 실패는 무시
+
 
     def _hide_crosshair(self):
-        if self._bg_cache is None:
-            return
-        changed = False
-        for vline, hline in self._crosshair_lines:
-            if vline.get_visible() or hline.get_visible():
-                vline.set_visible(False)
+        """크로스헤어 숨김."""
+        try:
+            if self._bg is not None:
+                self.canvas.restore_region(self._bg)
+            for hline, vline in self._crosshair_lines:
                 hline.set_visible(False)
-                changed = True
-        for txt in self._crosshair_texts:
-            if txt.get_visible():
+                vline.set_visible(False)
+            for txt in self._crosshair_texts:
                 txt.set_visible(False)
-                changed = True
-        if self._x_date_text and self._x_date_text.get_visible():
-            self._x_date_text.set_visible(False)
-            changed = True
-        if changed:
-            self.canvas.restore_region(self._bg_cache)
+            if hasattr(self, '_date_text'):
+                self._date_text.set_visible(False)
             self.canvas.blit(self.fig.bbox)
+        except Exception:
+            pass
+
+    # ─────────────── 유틸리티 ───────────────
+    @staticmethod
+    def _get_segments(mask):
+        """bool 마스크에서 연속 True 구간의 (start, end) 리스트 반환."""
+        segments = []
+        in_seg = False
+        start = 0
+        for i, v in enumerate(mask):
+            if v and not in_seg:
+                start = i
+                in_seg = True
+            elif not v and in_seg:
+                segments.append((start, i - 1))
+                in_seg = False
+        if in_seg:
+            segments.append((start, len(mask) - 1))
+        return segments

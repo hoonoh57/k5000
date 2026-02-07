@@ -122,7 +122,9 @@ class AnalysisWorker(QThread):
                 "backtest_result": result,
                 "df": df,
                 "kospi_df": kospi_df,
+                "regime": getattr(result, "regime_used", None),
             })
+
 
         except Exception as e:
             msg = f"AnalysisWorker error: {e}\n{traceback.format_exc()}"
