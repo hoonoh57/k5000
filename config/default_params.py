@@ -4,6 +4,7 @@ config/default_params.py  [MUTABLE]
 ===================================
 전략 파라미터 기본값 — strategy.py 검증값 복원.
 """
+import os
 
 DEFAULT_PARAMS = {
     # ── RSI (필터용) ──
@@ -73,7 +74,7 @@ MYSQL_PARAMS = {
     "host": "localhost",
     "port": 3306,
     "user": "root",
-    "password": "ms34469118",
+    "password": os.environ.get("DB_PASSWORD", ""),
     "database": "stock_info",
 }
 

@@ -756,3 +756,151 @@ AttributeError: 'numpy.timedelta64' object has no attribute 'days'
 2026-02-07 15:24:43,982 [INFO] plugins.data_source: Cybos index: KOSPI loaded 123 rows
 2026-02-07 15:24:44,023 [INFO] plugins.data_source: MySQL: 034020 loaded 123 rows (2025-08-07 ~ 2026-02-07)
 2026-02-07 15:24:44,183 [INFO] plugins.data_source: Cybos index: KOSPI loaded 123 rows
+2026-02-07 16:02:01,497 [INFO] main: === KOSPI Big10 IBS Trading System ===
+2026-02-07 16:02:01,497 [INFO] main: App launched at 16:02:01
+2026-02-07 16:02:01,979 [WARNING] plugins.data_source: MySQL connection failed: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'localhost' (using password: YES)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-02-07 16:02:02,013 [INFO] plugins.data_source: CompositeDataSource: active sources = ['Cybos', 'Kiwoom']
+2026-02-07 16:02:02,880 [WARNING] plugins.data_source: MySQL connection failed: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'localhost' (using password: YES)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-02-07 16:02:02,896 [INFO] plugins.data_source: CompositeDataSource: active sources = ['Cybos', 'Kiwoom']
+2026-02-07 16:02:02,930 [INFO] ui.main_window: [UI] MainWindow 초기화 완료
+2026-02-07 16:02:05,957 [INFO] plugins.data_source: Cybos index: KOSPI loaded 121 rows
+2026-02-07 16:02:05,958 [INFO] plugins.screener: [SCREEN] 시작: 2025-08-11 ~ 2026-02-07, 풀=50, 선정=10
+2026-02-07 16:02:06,020 [WARNING] plugins.screener: [SCREEN] 대형주 후보 0개
+2026-02-07 16:16:43,902 [INFO] main: === KOSPI Big10 IBS Trading System ===
+2026-02-07 16:16:43,902 [INFO] main: App launched at 16:16:43
+2026-02-07 16:16:44,375 [INFO] plugins.data_source: MySQL connected: localhost:3306/stock_info
+2026-02-07 16:16:44,407 [INFO] plugins.data_source: CompositeDataSource: active sources = ['MySQL', 'Cybos', 'Kiwoom']
+2026-02-07 16:16:45,263 [INFO] plugins.data_source: MySQL connected: localhost:3306/stock_info
+2026-02-07 16:16:45,268 [INFO] plugins.data_source: CompositeDataSource: active sources = ['MySQL', 'Cybos', 'Kiwoom']
+2026-02-07 16:16:45,302 [INFO] ui.main_window: [UI] MainWindow 초기화 완료
+2026-02-07 16:16:47,967 [INFO] plugins.data_source: Cybos index: KOSPI loaded 121 rows
+2026-02-07 16:16:47,968 [INFO] plugins.screener: [SCREEN] 시작: 2025-08-11 ~ 2026-02-07, 풀=50, 선정=10
+2026-02-07 16:16:48,003 [INFO] plugins.screener: [SCREEN] DB Level-0: 50개
+2026-02-07 16:16:48,008 [INFO] plugins.screener: [SCREEN] 후보 50개 로드
+2026-02-07 16:16:48,009 [INFO] plugins.screener: [SCREEN] KOSPI 지수 121행, 수익률 120행
+2026-02-07 16:16:48,009 [INFO] plugins.screener: [SCREEN] 분석 중 1/50: 삼성전자(005930)
+2026-02-07 16:16:48,020 [INFO] plugins.data_source: MySQL: 005930 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,034 [INFO] plugins.data_source: MySQL: 000660 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,046 [INFO] plugins.data_source: MySQL: 373220 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,058 [INFO] plugins.data_source: MySQL: 005380 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,070 [INFO] plugins.data_source: MySQL: 329180 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,081 [INFO] plugins.data_source: MySQL: 012450 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,093 [INFO] plugins.data_source: MySQL: 034020 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,106 [INFO] plugins.data_source: MySQL: 105560 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,118 [INFO] plugins.data_source: MySQL: 000270 loaded 124 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,131 [INFO] plugins.data_source: MySQL: 068270 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,135 [INFO] plugins.screener: [SCREEN] 분석 중 11/50: SK스퀘어(402340)
+2026-02-07 16:16:48,143 [INFO] plugins.data_source: MySQL: 402340 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,156 [INFO] plugins.data_source: MySQL: 035420 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,168 [INFO] plugins.data_source: MySQL: 055550 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,179 [INFO] plugins.data_source: MySQL: 028260 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,192 [INFO] plugins.data_source: MySQL: 015760 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,204 [INFO] plugins.data_source: MySQL: 009540 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,216 [INFO] plugins.data_source: MySQL: 032830 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,229 [INFO] plugins.data_source: MySQL: 267260 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,242 [INFO] plugins.data_source: MySQL: 051910 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,254 [INFO] plugins.data_source: MySQL: 012330 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,258 [INFO] plugins.screener: [SCREEN] 분석 중 21/50: 카카오(035720)
+2026-02-07 16:16:48,266 [INFO] plugins.data_source: MySQL: 035720 loaded 123 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,278 [INFO] plugins.data_source: MySQL: 086790 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,291 [INFO] plugins.data_source: MySQL: 006400 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,304 [INFO] plugins.data_source: MySQL: 005490 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,315 [INFO] plugins.data_source: MySQL: 010140 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,326 [INFO] plugins.data_source: MySQL: 000810 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,337 [INFO] plugins.data_source: MySQL: 064350 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,349 [INFO] plugins.data_source: MySQL: 096770 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,359 [INFO] plugins.data_source: MySQL: 298040 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,370 [INFO] plugins.data_source: MySQL: 316140 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,374 [INFO] plugins.screener: [SCREEN] 분석 중 31/50: 메리츠금융지주(138040)
+2026-02-07 16:16:48,381 [INFO] plugins.data_source: MySQL: 138040 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,393 [INFO] plugins.data_source: MySQL: 034730 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,406 [INFO] plugins.data_source: MySQL: 003670 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,417 [INFO] plugins.data_source: MySQL: 011200 loaded 123 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,429 [INFO] plugins.data_source: MySQL: 033780 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,441 [INFO] plugins.data_source: MySQL: 024110 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,453 [INFO] plugins.data_source: MySQL: 000150 loaded 115 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,466 [INFO] plugins.data_source: MySQL: 009150 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,478 [INFO] plugins.data_source: MySQL: 066570 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,490 [INFO] plugins.data_source: MySQL: 010120 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,494 [INFO] plugins.screener: [SCREEN] 분석 중 41/50: 미래에셋증권(006800)
+2026-02-07 16:16:48,503 [INFO] plugins.data_source: MySQL: 006800 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,515 [INFO] plugins.data_source: MySQL: 018260 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,528 [INFO] plugins.data_source: MySQL: 003550 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,540 [INFO] plugins.data_source: MySQL: 259960 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,552 [INFO] plugins.data_source: MySQL: 042700 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,565 [INFO] plugins.data_source: MySQL: 030200 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,576 [INFO] plugins.data_source: MySQL: 352820 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,587 [INFO] plugins.data_source: MySQL: 086280 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,598 [INFO] plugins.data_source: MySQL: 017670 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,610 [INFO] plugins.data_source: MySQL: 047810 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:16:48,614 [INFO] plugins.screener: [SCREEN] 최종 선정 10개
+2026-02-07 16:21:17,549 [INFO] main: === KOSPI Big10 IBS Trading System ===
+2026-02-07 16:21:17,550 [INFO] main: App launched at 16:21:17
+2026-02-07 16:21:18,095 [INFO] plugins.data_source: MySQL connected: localhost:3306/stock_info
+2026-02-07 16:21:18,122 [INFO] plugins.data_source: CompositeDataSource: active sources = ['MySQL', 'Cybos', 'Kiwoom']
+2026-02-07 16:21:19,047 [INFO] plugins.data_source: MySQL connected: localhost:3306/stock_info
+2026-02-07 16:21:19,072 [INFO] plugins.data_source: CompositeDataSource: active sources = ['MySQL', 'Cybos', 'Kiwoom']
+2026-02-07 16:21:19,110 [INFO] ui.main_window: [UI] MainWindow 초기화 완료
+2026-02-07 16:21:22,425 [INFO] plugins.data_source: Cybos index: KOSPI loaded 121 rows
+2026-02-07 16:21:22,426 [INFO] plugins.screener: [SCREEN] 시작: 2025-08-11 ~ 2026-02-07, 풀=50, 선정=10
+2026-02-07 16:21:22,459 [INFO] plugins.screener: [SCREEN] DB Level-0: 50개
+2026-02-07 16:21:22,463 [INFO] plugins.screener: [SCREEN] 후보 50개 로드
+2026-02-07 16:21:22,465 [INFO] plugins.screener: [SCREEN] KOSPI 지수 121행, 수익률 120행
+2026-02-07 16:21:22,465 [INFO] plugins.screener: [SCREEN] 분석 중 1/50: 삼성전자(005930)
+2026-02-07 16:21:22,476 [INFO] plugins.data_source: MySQL: 005930 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,490 [INFO] plugins.data_source: MySQL: 000660 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,503 [INFO] plugins.data_source: MySQL: 373220 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,517 [INFO] plugins.data_source: MySQL: 005380 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,530 [INFO] plugins.data_source: MySQL: 329180 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,543 [INFO] plugins.data_source: MySQL: 012450 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,556 [INFO] plugins.data_source: MySQL: 034020 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,569 [INFO] plugins.data_source: MySQL: 105560 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,590 [INFO] plugins.data_source: MySQL: 000270 loaded 124 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,604 [INFO] plugins.data_source: MySQL: 068270 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,608 [INFO] plugins.screener: [SCREEN] 분석 중 11/50: SK스퀘어(402340)
+2026-02-07 16:21:22,617 [INFO] plugins.data_source: MySQL: 402340 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,630 [INFO] plugins.data_source: MySQL: 035420 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,643 [INFO] plugins.data_source: MySQL: 055550 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,657 [INFO] plugins.data_source: MySQL: 028260 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,670 [INFO] plugins.data_source: MySQL: 015760 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,683 [INFO] plugins.data_source: MySQL: 009540 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,695 [INFO] plugins.data_source: MySQL: 032830 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,709 [INFO] plugins.data_source: MySQL: 267260 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,724 [INFO] plugins.data_source: MySQL: 051910 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,738 [INFO] plugins.data_source: MySQL: 012330 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,743 [INFO] plugins.screener: [SCREEN] 분석 중 21/50: 카카오(035720)
+2026-02-07 16:21:22,756 [INFO] plugins.data_source: MySQL: 035720 loaded 123 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,771 [INFO] plugins.data_source: MySQL: 086790 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,786 [INFO] plugins.data_source: MySQL: 006400 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,800 [INFO] plugins.data_source: MySQL: 005490 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,814 [INFO] plugins.data_source: MySQL: 010140 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,827 [INFO] plugins.data_source: MySQL: 000810 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,841 [INFO] plugins.data_source: MySQL: 064350 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,855 [INFO] plugins.data_source: MySQL: 096770 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,868 [INFO] plugins.data_source: MySQL: 298040 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,881 [INFO] plugins.data_source: MySQL: 316140 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,886 [INFO] plugins.screener: [SCREEN] 분석 중 31/50: 메리츠금융지주(138040)
+2026-02-07 16:21:22,898 [INFO] plugins.data_source: MySQL: 138040 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,911 [INFO] plugins.data_source: MySQL: 034730 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,925 [INFO] plugins.data_source: MySQL: 003670 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,938 [INFO] plugins.data_source: MySQL: 011200 loaded 123 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,951 [INFO] plugins.data_source: MySQL: 033780 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,965 [INFO] plugins.data_source: MySQL: 024110 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,979 [INFO] plugins.data_source: MySQL: 000150 loaded 115 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:22,993 [INFO] plugins.data_source: MySQL: 009150 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,007 [INFO] plugins.data_source: MySQL: 066570 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,020 [INFO] plugins.data_source: MySQL: 010120 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,025 [INFO] plugins.screener: [SCREEN] 분석 중 41/50: 미래에셋증권(006800)
+2026-02-07 16:21:23,035 [INFO] plugins.data_source: MySQL: 006800 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,049 [INFO] plugins.data_source: MySQL: 018260 loaded 118 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,062 [INFO] plugins.data_source: MySQL: 003550 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,076 [INFO] plugins.data_source: MySQL: 259960 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,089 [INFO] plugins.data_source: MySQL: 042700 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,102 [INFO] plugins.data_source: MySQL: 030200 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,115 [INFO] plugins.data_source: MySQL: 352820 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,128 [INFO] plugins.data_source: MySQL: 086280 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,142 [INFO] plugins.data_source: MySQL: 017670 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,156 [INFO] plugins.data_source: MySQL: 047810 loaded 121 rows (2025-08-11 ~ 2026-02-07)
+2026-02-07 16:21:23,160 [INFO] plugins.screener: [SCREEN] 최종 선정 10개
