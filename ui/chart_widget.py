@@ -92,15 +92,13 @@ class StockChartWidget(QWidget):
         self._x_dates = dates.tolist()
 
         # ── JMA slope_pct 계산 ──
-        if 'jma' in df.columns and 'jma_slope' in df.columns:
-            jma_shifted = df['jma'].shift(1)
-            df['slope_pct'] = np.where(
-                jma_shifted.abs() > 1e-9,
-                (df['jma_slope'] / jma_shifted) * 100,
-                0.0
-            )
+        # jma_slope가 이미 비율(정규화)이므로 *100만 하면 %
+        if 'jma_slope' in df.columns:
+            df['slope_pct'] = df['jma_slope']
+
         else:
             df['slope_pct'] = 0.0
+
 
         # ── GridSpec: 6행 ──
         gs = GridSpec(6, 1, figure=self.fig,

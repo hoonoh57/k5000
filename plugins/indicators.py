@@ -233,7 +233,13 @@ class _JMACore:
                 up_arr[i] = np.nan
                 down_arr[i] = np.nan
 
-            slope_arr[i] = current_jma - prev_jma
+            # 정규화 기울기: 가격대 무관하게 비율(%)로 표현
+            if prev_jma != 0:
+                slope_arr[i] = (current_jma - prev_jma) / prev_jma * 100
+            else:
+                slope_arr[i] = 0.0
+
+
             prev_jma = current_jma
 
         # ── 초기 lookback NaN 처리 ──

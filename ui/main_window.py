@@ -40,6 +40,7 @@ from ui.chart_widget import StockChartWidget
 from ui.workers import ScreeningWorker, AnalysisWorker, BatchAnalysisWorker
 from ui.strategy_manager_dialog import StrategyManagerDialog
 from core.db_strategy_store import DBStrategyStore
+from core.strategy_executor import StrategyBacktester, ExitRuleEngine  #삽입
 
 logger = logging.getLogger(__name__)
 
@@ -238,10 +239,13 @@ class MainWindow(QMainWindow):
         param_layout.addRow("손절률:", self.spin_stoploss)
 
         self.spin_slope_min = QDoubleSpinBox()
-        self.spin_slope_min.setRange(0.0, 10000.0)
-        self.spin_slope_min.setSingleStep(100.0)
-        self.spin_slope_min.setValue(self.params.get("jma_slope_min", 0.0))
-        param_layout.addRow("JMA 기울기:", self.spin_slope_min)
+        self.spin_slope_min.setRange(-50.0, 50.0)
+        self.spin_slope_min.setSingleStep(0.1)
+        self.spin_slope_min.setDecimals(2)
+        self.spin_slope_min.setValue(0.0)
+
+
+        param_layout.addRow("JMA 기울기(%):", self.spin_slope_min)
 
         left_layout.addWidget(param_group)
 
@@ -709,16 +713,28 @@ class MainWindow(QMainWindow):
                     self.spin_st_period.setValue(int(p["st_period"]))
                 if "st_multiplier" in p:
                     self.spin_st_mult.setValue(float(p["st_multiplier"]))
-                if "target_pct" in p:
-                    self.spin_target.setValue(float(p["target_pct"]))
-                if "stop_pct" in p:
-                    self.spin_stoploss.setValue(float(p["stop_pct"]))
+                # exit_rules에서 손절/익절 가져오기
+                exit_rules = p.get("exit_rules", {})
+                if exit_rules:
+                    sl = exit_rules.get("stop_loss", {})
+                    if sl.get("enabled"):
+                        self.spin_stoploss.setValue(sl.get("pct", -5.0) / 100.0)
+                    tp = exit_rules.get("take_profit", {})
+                    if tp.get("enabled"):
+                        self.spin_target.setValue(tp.get("pct", 15.0) / 100.0)
+                else:
+                    # 이전 형태 호환
+                    if "target_pct" in p:
+                        self.spin_target.setValue(float(p["target_pct"]))
+                    if "stop_pct" in p:
+                        self.spin_stoploss.setValue(float(p["stop_pct"]))
                 if "jma_slope_min" in p:
                     self.spin_slope_min.setValue(float(p["jma_slope_min"]))
                 self._db_store.set_active_trade_strategy(strategy_id)
                 logger.info(f"[UI] 매매전략 변경: {strategy['name']}")
         except Exception as e:
             logger.warning(f"[UI] 매매전략 로드 실패: {e}")
+
 
     def _open_strategy_manager(self, tab: str = "screen"):
         """전략 관리자 다이얼로그 열기."""
@@ -729,4 +745,15 @@ class MainWindow(QMainWindow):
         )
         dlg.exec()
         # 다이얼로그 닫힌 후 콤보 새로고침
+        self._load_strategy_combos()
+
+    def _open_strategy_manager(self, tab: str = "screen"):
+        """전략 관리자 다이얼로그 열기."""
+        dlg = StrategyManagerDialog(
+            db_store=self._db_store,
+            parent=self,
+            initial_tab=tab,
+        )
+        dlg.exec()
+        # 다이얼로그 닫힌 후 콤보박스 새로고침
         self._load_strategy_combos()
