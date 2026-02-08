@@ -1,197 +1,227 @@
 # -*- coding: utf-8 -*-
 """
-core/order_manager.py  [IMMUTABLE]
-==================================
-주문 생애주기 관리.
-생성 → 중복검사 → 리스크검증 → 전송 → 접수 → 체결 → 잔고갱신
-
-브로커(IBroker)는 set_broker()로 주입. 코어는 브로커 구현을 모른다.
+주문 관리자: 신호 → 주문수량 계산 → 브로커 전달 → 알림.
+불변구조: 로직은 고정, 파라미터는 YAML에서 로드.
 """
 from __future__ import annotations
-from typing import Dict, Optional, Callable, Any
-from datetime import datetime
-import logging
-import traceback
-from pathlib import Path
 
-from core.order_types import Order, OrderSide, OrderStatus, BalanceItem, AccountInfo
-from core.interfaces import IBroker, IRiskGate
-from core.event_bus import EventBus
+import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Optional
+
+from core import config
+from core.types import Signal, Direction
 
 logger = logging.getLogger(__name__)
-_LOG_DIR = Path("data/logs")
-_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _log_error(msg: str) -> None:
-    try:
-        with open(_LOG_DIR / "error_log.txt", "a", encoding="utf-8") as f:
-            f.write(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
-    except Exception:
-        pass
+@dataclass
+class OrderRequest:
+    """주문 요청."""
+    code: str
+    name: str
+    direction: str          # "BUY" or "SELL"
+    qty: int
+    price: float
+    reason: str
+    created_at: datetime = field(default_factory=datetime.now)
+    status: str = "대기"    # 대기 → 확인 → 전송 → 체결/실패
+
+
+@dataclass
+class Position:
+    """보유 포지션."""
+    code: str
+    name: str
+    qty: int
+    avg_price: float
+    entry_date: datetime
 
 
 class OrderManager:
-    """주문 관리자 — 불변 코어."""
+    """신호를 주문으로 변환하고 관리한다."""
 
-    def __init__(self, event_bus: EventBus) -> None:
-        self._bus = event_bus
-        self._broker: Optional[IBroker] = None
-        self._risk: Optional[IRiskGate] = None
-        self._orders: Dict[str, Order] = {}          # order_no -> Order
-        self._pending: Dict[str, Order] = {}          # code -> 활성 주문 (중복 방지)
-        self._account = AccountInfo()
+    def __init__(self, broker=None, notifier=None, event_bus=None):
+        self.broker = broker
+        self.notifier = notifier
+        self.event_bus = event_bus
+        self.risk_gate = None
+        self.positions: dict[str, Position] = {}
+        self.pending_orders: list[OrderRequest] = []
+        self.order_history: list[OrderRequest] = []
 
-    # ── 의존성 주입 ──
-    def set_broker(self, broker: IBroker) -> None:
-        self._broker = broker
-
-    def set_risk_gate(self, risk: IRiskGate) -> None:
-        self._risk = risk
-
-    @property
-    def account(self) -> AccountInfo:
-        return self._account
+    def set_risk_gate(self, risk_mgr):
+        """리스크 매니저 연결 (main.py 호환)."""
+        self.risk_gate = risk_mgr
+        logger.info("[ORDER] 리스크 게이트 연결 완료")
 
     @property
-    def active_orders(self) -> Dict[str, Order]:
-        return {k: v for k, v in self._orders.items()
-                if v.status in (OrderStatus.SUBMITTED, OrderStatus.ACCEPTED, OrderStatus.PARTIAL)}
+    def total_capital(self) -> float:
+        return config.get("order.total_capital", 50_000_000)
 
-    # ── 주문 생성 ──
-    def create_order(self, order: Order) -> bool:
+    @property
+    def per_stock_pct(self) -> float:
+        return config.get("order.per_stock_pct", 20.0)
+
+    @property
+    def max_stocks(self) -> int:
+        return config.get("order.max_stocks", 5)
+
+    def calc_buy_qty(self, price: float) -> int:
+        """매수 수량 계산."""
+        if price <= 0:
+            return 0
+        budget = self.total_capital * (self.per_stock_pct / 100.0)
+        qty = int(budget // price)
+        return qty
+
+    def on_signal(self, signal: Signal, name: str = "",
+                  regime: str = "") -> Optional[OrderRequest]:
+        """
+        신호 수신 → 주문 요청 생성 → 알림 전송.
+        반자동 모드: 주문을 pending에 넣고 사용자 확인 대기.
+        """
+        mode = config.get("broker.mode", "semi_auto")
+        code = signal.code
+        price = signal.price
+
+        if signal.direction == Direction.BUY:
+            # 이미 보유 중이면 무시
+            if code in self.positions:
+                logger.info(f"[ORDER] {code} 이미 보유 중 - 매수 무시")
+                return None
+
+            # 최대 보유 종목수 초과 체크
+            if len(self.positions) >= self.max_stocks:
+                logger.info(f"[ORDER] 최대 보유({self.max_stocks}) 초과 - 매수 무시")
+                return None
+
+            qty = self.calc_buy_qty(price)
+            if qty <= 0:
+                return None
+
+            order = OrderRequest(
+                code=code, name=name, direction="BUY",
+                qty=qty, price=price, reason=signal.reason,
+            )
+
+        elif signal.direction == Direction.SELL:
+            # 보유 중이 아니면 무시
+            if code not in self.positions:
+                logger.info(f"[ORDER] {code} 미보유 - 매도 무시")
+                return None
+
+            pos = self.positions[code]
+            order = OrderRequest(
+                code=code, name=name, direction="SELL",
+                qty=pos.qty, price=price, reason=signal.reason,
+            )
+
+        else:
+            return None
+
+        # 알림 전송
+        if self.notifier:
+            self.notifier.signal_alert(
+                direction=order.direction, code=code, name=name,
+                price=price, reason=signal.reason, regime=regime,
+            )
+
+        if mode == "full_auto":
+            return self.execute(order)
+        else:
+            # 반자동: 대기열에 추가
+            self.pending_orders.append(order)
+            logger.info(
+                f"[ORDER] 대기: {order.direction} {code} "
+                f"{order.qty}주 @ {price:,.0f}"
+            )
+            return order
+
+    def execute(self, order: OrderRequest) -> OrderRequest:
+        """주문 실행 (브로커 전달)."""
+        if not self.broker:
+            order.status = "브로커 없음"
+            logger.warning(f"[ORDER] 브로커 미연결 - 주문 미실행")
+            self.order_history.append(order)
+            return order
+
         try:
-            # 중복 검사
-            if self._check_duplicate(order):
-                logger.warning(f"중복 주문 차단: {order.code} {order.side.name}")
-                return False
-
-            # 리스크 검증
-            if self._risk:
-                info = {"code": order.code, "side": order.side.name,
-                        "qty": order.qty, "price": order.price}
-                if not self._risk.check(info):
-                    logger.warning(f"리스크 거부: {order.code}")
-                    order.status = OrderStatus.REJECTED
-                    order.reject_reason = "Risk gate rejected"
-                    return False
-
-            # 전송
-            return self._submit(order)
-
-        except Exception as e:
-            msg = f"create_order error: {e}\n{traceback.format_exc()}"
-            logger.error(msg)
-            _log_error(msg)
-            order.status = OrderStatus.FAILED
-            return False
-
-    def _check_duplicate(self, order: Order) -> bool:
-        active = self._pending.get(order.code)
-        if active and active.status in (OrderStatus.SUBMITTED, OrderStatus.ACCEPTED, OrderStatus.PARTIAL):
-            if active.side == order.side:
-                return True
-        return False
-
-    def _submit(self, order: Order) -> bool:
-        if not self._broker:
-            logger.error("브로커가 설정되지 않음")
-            order.status = OrderStatus.FAILED
-            order.reject_reason = "No broker"
-            return False
-
-        try:
-            side_str = "1" if order.side == OrderSide.BUY else "2"
-            order_no = self._broker.send_order(
-                account=self._account.account_no,
+            order.status = "전송"
+            result = self.broker.send_order(
                 code=order.code,
+                direction=order.direction,
                 qty=order.qty,
                 price=order.price,
-                side=side_str,
-                order_type=order.price_type.value,
             )
-            if order_no:
-                order.order_no = order_no
-                order.status = OrderStatus.SUBMITTED
-                order.updated_at = datetime.now()
-                self._orders[order_no] = order
-                self._pending[order.code] = order
-                self._bus.publish("order_submitted", order=order)
-                logger.info(f"주문 전송: {order.code} {order.side.name} {order.qty}주 @ {order.price}")
-                return True
+
+            if result.get("success"):
+                order.status = "체결"
+                # 포지션 업데이트
+                if order.direction == "BUY":
+                    self.positions[order.code] = Position(
+                        code=order.code, name=order.name,
+                        qty=order.qty, avg_price=order.price,
+                        entry_date=datetime.now(),
+                    )
+                elif order.direction == "SELL":
+                    self.positions.pop(order.code, None)
             else:
-                order.status = OrderStatus.FAILED
-                order.reject_reason = "send_order returned empty"
-                return False
+                order.status = f"실패: {result.get('message', '')}"
+
         except Exception as e:
-            msg = f"_submit error: {e}\n{traceback.format_exc()}"
-            logger.error(msg)
-            _log_error(msg)
-            order.status = OrderStatus.FAILED
-            return False
+            order.status = f"에러: {e}"
+            logger.error(f"[ORDER] 주문 실행 에러: {e}")
 
-    # ── 이벤트 핸들러 (브로커 콜백에서 호출) ──
-    def on_order_accepted(self, order_no: str) -> None:
-        order = self._orders.get(order_no)
-        if order:
-            order.status = OrderStatus.ACCEPTED
-            order.updated_at = datetime.now()
-            self._bus.publish("order_accepted", order=order)
+        # 결과 알림
+        if self.notifier:
+            self.notifier.order_result(
+                direction=order.direction, code=order.code,
+                name=order.name, qty=order.qty,
+                price=order.price, status=order.status,
+            )
 
-    def on_order_filled(self, order_no: str, filled_qty: int, filled_price: float) -> None:
-        order = self._orders.get(order_no)
-        if not order:
-            return
+        self.order_history.append(order)
+        if order in self.pending_orders:
+            self.pending_orders.remove(order)
 
-        order.filled_qty += filled_qty
-        order.filled_price = filled_price
-        order.updated_at = datetime.now()
+        return order
 
-        if order.filled_qty >= order.qty:
-            order.status = OrderStatus.FILLED
-            self._pending.pop(order.code, None)
-        else:
-            order.status = OrderStatus.PARTIAL
+    def confirm_pending(self, index: int = 0) -> Optional[OrderRequest]:
+        """대기 중인 주문을 사용자가 확인 후 실행."""
+        if not self.pending_orders:
+            logger.info("[ORDER] 대기 주문 없음")
+            return None
 
-        self._update_balance_from_fill(order, filled_qty, filled_price)
-        self._bus.publish("order_filled", order=order,
-                          filled_qty=filled_qty, filled_price=filled_price)
-        logger.info(f"체결: {order.code} {order.side.name} {filled_qty}주 @ {filled_price}")
+        if index >= len(self.pending_orders):
+            return None
 
-    def on_order_cancelled(self, order_no: str) -> None:
-        order = self._orders.get(order_no)
-        if order:
-            order.status = OrderStatus.CANCELLED
-            order.updated_at = datetime.now()
-            self._pending.pop(order.code, None)
-            self._bus.publish("order_cancelled", order=order)
+        order = self.pending_orders[index]
+        return self.execute(order)
 
-    # ── 잔고 갱신 ──
-    def _update_balance_from_fill(self, order: Order, qty: int, price: float) -> None:
-        holdings = self._account.holdings
-        item = holdings.get(order.code, BalanceItem(code=order.code))
+    def reject_pending(self, index: int = 0) -> Optional[OrderRequest]:
+        """대기 주문 거부."""
+        if not self.pending_orders:
+            return None
 
-        if order.side == OrderSide.BUY:
-            total_cost = item.avg_price * item.qty + price * qty
-            item.qty += qty
-            item.avg_price = total_cost / item.qty if item.qty > 0 else 0.0
-        elif order.side == OrderSide.SELL:
-            item.qty -= qty
-            if item.qty <= 0:
-                holdings.pop(order.code, None)
-                return
+        if index >= len(self.pending_orders):
+            return None
 
-        holdings[order.code] = item
+        order = self.pending_orders.pop(index)
+        order.status = "거부"
+        self.order_history.append(order)
+        logger.info(f"[ORDER] 거부: {order.direction} {order.code}")
+        return order
 
-    def sync_balance(self) -> None:
-        """브로커로부터 잔고 동기화"""
-        if not self._broker:
-            return
-        try:
-            data = self._broker.get_balance(self._account.account_no)
-            if data:
-                self._account.deposit = data.get("deposit", self._account.deposit)
-                self._account.total_eval = data.get("total_eval", self._account.total_eval)
-                # 상세 항목은 브로커 어댑터에서 파싱하여 제공
-        except Exception as e:
-            _log_error(f"sync_balance error: {e}")
+    def get_portfolio_summary(self) -> dict:
+        """현재 포트폴리오 요약."""
+        return {
+            "positions": len(self.positions),
+            "max_stocks": self.max_stocks,
+            "pending_orders": len(self.pending_orders),
+            "total_capital": self.total_capital,
+            "invested": sum(
+                p.qty * p.avg_price for p in self.positions.values()
+            ),
+        }

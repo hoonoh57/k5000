@@ -1,0 +1,71 @@
+# config/strategy.yaml
+# ─────────────────────────────────────────
+# 이 파일만 수정하면 코드 변경 없이 전략이 바뀜
+# ─────────────────────────────────────────
+
+regime:
+  st_period: 14
+  st_multiplier: 3.0
+  jma_length: 7
+  jma_phase: 50
+
+signals:
+  bull:
+    # 매수 조건
+    jma_slope_min: 0.00        # JMA 기울기 최소값
+    rsi_oversold: 30           # RSI 과매도
+    rsi_overbought: 80         # RSI 과매수
+    # 매수 후 재진입 쿨다운 (봉 수)
+    cooldown_after_sell: 5     # 매도 후 N봉 동안 매수 금지
+    # 고점 추격 방지
+    max_distance_from_jma: 3.0 # JMA 대비 N% 이상 위면 매수 금지
+    # 횡보 필터
+    sideways:
+      enabled: true
+      atr_ratio: 0.85          # ATR < 평균의 N배면 횡보
+      jma_flips: 3             # JMA 방향전환 N회 이상이면 횡보
+      range_pct: 3.5           # 일중변동폭 N% 미만이면 횡보
+      min_conditions: 1        # 위 조건 중 N개 이상 충족 시
+
+  bear:
+    jma_slope_min: 0.00
+    rsi_oversold: 30
+    rsi_overbought: 70
+
+  sideways_swing:
+    rsi_oversold: 40
+    rsi_overbought: 70
+
+backtest:
+  target_pct: 0.15             # 목표 수익률
+  stop_pct: -0.05              # 손절률
+  slippage: 0.001              # 슬리피지
+
+chart:
+  sideways_alpha: 0.12         # 횡보 구간 배경 투명도
+  sideways_color: "#9e9e9e"    # 횡보 구간 색상
+  trade_win_color: "#26a69a"   # 수익 거래 배경
+  trade_loss_color: "#ef5350"  # 손실 거래 배경
+
+# ─────────────────────────────────────────
+# 1단계: 반자동 주문 설정
+# ─────────────────────────────────────────
+
+broker:
+  active: "cybos"              # cybos 또는 kiwoom
+  mode: "semi_auto"            # semi_auto: 알림 후 확인 | full_auto: 즉시 주문
+  cybos:
+    port: 8081                 # CpCybos REST 포트
+  kiwoom:
+    account: ""                # 키움 계좌번호
+
+order:
+  max_stocks: 5                # 동시 보유 최대 종목수
+  per_stock_pct: 20.0          # 종목당 투자비중 (%)
+  total_capital: 50000000      # 총 운용자금 (원)
+  slippage_pct: 0.1            # 슬리피지 (%)
+
+notification:
+  type: "sound"          # sound (PC 소리+팝업)
+  sound:
+    enabled: true

@@ -41,7 +41,6 @@ from plugins.regime import STRegimeDetector
 from plugins.screener import BetaCorrelationScreener
 from plugins.strategy_router import StrategyRouter
 
-
 def main():
     logger.info("=== KOSPI Big10 IBS Trading System ===")
     logger.info(f"App launched at {datetime.now():%H:%M:%S}")
@@ -106,8 +105,12 @@ def main():
         strategy_router=router,           # 레짐별 자동 라우팅
     )
 
+    # ── 알림 ──
+    from plugins.notifier import Notifier
+    notifier = Notifier()
+
     # ── 주문 관리 ──
-    order_mgr = OrderManager(event_bus=bus)
+    order_mgr = OrderManager(broker=None, notifier=notifier)
     order_mgr.set_risk_gate(risk_mgr)
 
     # ── 실행 모드 ──

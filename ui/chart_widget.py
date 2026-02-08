@@ -21,7 +21,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.patches import FancyBboxPatch
 import matplotlib.ticker as mticker
 import matplotlib.dates as mdates
-
+from core import config          # <== 이 줄 추가
 logger = logging.getLogger(__name__)
 
 
@@ -411,29 +411,39 @@ class StockChartWidget(QWidget):
 
     # ─────────────── 횡보 구간 표시 ───────────────
     def _draw_sideways_zones(self, ax, df, x):
-        """
-        횡보 구간을 가격 차트에 회색 반투명 배경으로 표시.
-        signals.py의 _is_sideways와 동일한 로직 (미래 참조 없음).
-        """
+        """횡보 구간을 회색 배경으로 표시."""
+
+        # 차트도 같은 YAML 값을 읽어 일치 보장
+        atr_ratio = config.get("signals.bull.sideways.atr_ratio", 0.85)
+        jma_flips_th = config.get("signals.bull.sideways.jma_flips", 3)
+        range_th = config.get("signals.bull.sideways.range_pct", 3.5)
+        min_cond = config.get("signals.bull.sideways.min_conditions", 1)
+        sw_alpha = config.get("chart.sideways_alpha", 0.12)
+        sw_color = config.get("chart.sideways_color", "#9e9e9e")
+
+
         if len(df) < 20:
             return
 
         try:
             sideways_mask = np.zeros(len(df), dtype=bool)
+            atr_hits = 0
+            jma_hits = 0
+            range_hits = 0
 
-            # 각 봉에서 과거 데이터만으로 횡보 판단
             for i in range(20, len(df)):
                 count = 0
 
-                # 조건 1: ATR 축소 (변동성 감소)
+                # 조건 1: ATR 축소 (0.7 -> 0.85로 완화)
                 if 'atr' in df.columns:
                     atr_now = df['atr'].iloc[i]
                     atr_avg = df['atr'].iloc[max(0, i - 20):i].mean()
                     if atr_avg > 0 and not np.isnan(atr_now):
-                        if atr_now < atr_avg * 0.7:
+                        if atr_now < atr_avg * 0.85:
                             count += 1
+                            atr_hits += 1
 
-                # 조건 2: JMA slope 방향 진동 (추세 부재)
+                # 조건 2: JMA slope 진동 (flips >= 3 유지)
                 if 'jma_slope' in df.columns:
                     slope_window = df['jma_slope'].iloc[max(0, i - 10):i + 1]
                     if len(slope_window) >= 5:
@@ -441,8 +451,9 @@ class StockChartWidget(QWidget):
                         flips = signs.diff().abs().sum()
                         if flips >= 3:
                             count += 1
+                            jma_hits += 1
 
-                # 조건 3: 일중 변동폭 축소 (좁은 레인지)
+                # 조건 3: 가격 레인지 축소 (2.0% -> 3.5%로 완화)
                 if all(c in df.columns for c in ['high', 'low', 'close']):
                     window = df.iloc[max(0, i - 20):i + 1]
                     if len(window) >= 10:
@@ -451,21 +462,28 @@ class StockChartWidget(QWidget):
                             range_pct = (
                                 (window['high'] - window['low']) / avg_close
                             ).mean() * 100
-                            if range_pct < 2.0:
+                            if range_pct < 3.5:
                                 count += 1
+                                range_hits += 1
 
-                sideways_mask[i] = (count >= 2)
+                # 1개 이상 충족 시 횡보 (기존 2개 -> 1개로 완화)
+                sideways_mask[i] = (count >= 1)
 
-            # 연속 구간을 회색 배경으로 표시
+            total_bars = len(df) - 20
+            logger.info(
+                f"[CHART SIDEWAYS] {total_bars}봉: "
+                f"ATR={atr_hits}, JMA={jma_hits}, Range={range_hits}, "
+                f"횡보={int(sideways_mask.sum())}개"
+            )
+
             segments = self._get_segments(sideways_mask)
             for start, end in segments:
                 ax.axvspan(
                     x[start] - 0.5, x[end] + 0.5,
-                    alpha=0.12, color='#9e9e9e',
+                    alpha=0.10, color='#9e9e9e',
                     zorder=0,
                 )
 
-            # 범례에 횡보 구간 추가
             if segments:
                 from matplotlib.patches import Patch
                 sideways_patch = Patch(
@@ -486,8 +504,6 @@ class StockChartWidget(QWidget):
 
         except Exception as e:
             logger.warning(f"[CHART] 횡보 구간 표시 에러: {e}")
-
-
 
 
     # ─────────────── KOSPI 비교 ───────────────

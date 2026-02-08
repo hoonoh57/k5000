@@ -1,7 +1,4 @@
-__pycache__/
-*.pyc
-*.bak
-data/logs/
-.env__pycache__/ 
+__pycache__/ 
 *.pyc 
 data/logs/ 
+.env 

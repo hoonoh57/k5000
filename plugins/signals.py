@@ -8,162 +8,140 @@ plugins/signals.py
 - SidewaysSwingSignalGenerator: 횡보장 단기 스윙
 """
 from __future__ import annotations
+import logging
 from typing import List, Dict, Any
 import numpy as np
 import pandas as pd
 from core.interfaces import ISignalGenerator
 from core.types import Signal, Direction
 
+logger = logging.getLogger(__name__)     # <== 이 줄이 반드시 있어야 함
+
+from core import config
 
 class STJMASignalGenerator(ISignalGenerator):
-    """상승장 주력: ST 상승 + JMA 상승전환 매수 (횡보 필터 포함)."""
 
-    def generate(self, df: pd.DataFrame, code: str,
-                 params: Dict[str, Any]) -> List[Signal]:
-        signals: List[Signal] = []
-        slope_min = params.get("jma_slope_min", 0.0)
-        rsi_ob = params.get("rsi_ob", 80)
-        rsi_os = params.get("rsi_os", 30)
-
+    def generate(self, df, code, params):
+        """상승장 주력: ST 상승 + JMA 상승전환 매수."""
+        signals = []
         required = ["close", "st_dir", "jma", "jma_slope"]
-        for col in required:
-            if col not in df.columns:
-                return signals
+        if not all(c in df.columns for c in required):
+            return signals
 
         close = df["close"].values
         st_dir = df["st_dir"].values
+        jma = df["jma"].values
         jma_slope = df["jma_slope"].values
+        jma_dir = (jma_slope > 0).astype(int)
         dates = df["date"].values if "date" in df.columns else df.index.values
-        rsi = df["rsi"].values if "rsi" in df.columns else np.full(len(df), 50.0)
+        rsi = df["rsi"].values if "rsi" in df.columns else np.full(len(close), 50.0)
         n = len(close)
 
-        jma_dir = np.zeros(n, dtype=int)
-        jma_dir[jma_slope > 0] = 1
-        jma_dir[jma_slope < 0] = -1
+        slope_min = params.get("jma_slope_min", 0.0)
+        rsi_ob = params.get("rsi_overbought", 80)
+        rsi_os = params.get("rsi_oversold", 30)
 
-        for i in range(2, n):
+        for i in range(1, n):
             dt = dates[i]
-            cur_st = st_dir[i]
-            prev_st = st_dir[i - 1]
-            cur_jma = jma_dir[i]
-            prev_jma = jma_dir[i - 1]
-            cur_slope = jma_slope[i]
-            cur_rsi = rsi[i]
+            price = float(close[i])
+            cur_st = int(st_dir[i])
+            prev_st = int(st_dir[i - 1])
+            cur_jma = int(jma_dir[i])
+            prev_jma = int(jma_dir[i - 1])
+            cur_slope = float(jma_slope[i])
+            cur_rsi = float(rsi[i])
 
+            # ── 매수 조건 ──
             buy = False
-            reason = ""
-            strength = 0.0
+            reason_parts = []
 
             if cur_st == 1 and cur_jma == 1 and prev_jma <= 0:
                 buy = True
-                reason = "ST_UP+JMA_TURN_UP"
-                strength = 0.7
+                reason_parts.append("JMA_TURN")
             elif cur_st == 1 and prev_st != 1 and cur_jma == 1:
                 buy = True
-                reason = "ST_TURN_UP+JMA_UP"
-                strength = 0.8
+                reason_parts.append("ST_TURN")
 
-            if buy and slope_min > 0:
-                if pd.isna(cur_slope) or cur_slope < slope_min:
-                    buy = False
-
-            if buy and not np.isnan(cur_rsi) and cur_rsi <= rsi_os:
-                strength = min(strength + 0.2, 1.0)
-                reason += "+RSI_OS"
-
-            # ── 횡보 필터: 매수 직전 횡보 감지 시 억제 ──
-            if buy and self._is_sideways(df, i):
-                logger.debug(
-                    f"[SIGNAL] {code} {dt}: 횡보 감지 - 매수 억제 "
-                    f"({reason})"
-                )
+            if buy and slope_min > 0 and cur_slope < slope_min:
                 buy = False
-                # 억제된 것도 기록하려면 HOLD 신호로 남김
-                signals.append(Signal(
-                    direction=Direction.HOLD, code=code, dt=dt,
-                    price=float(close[i]), strength=0.0,
-                    reason=f"SIDEWAYS_FILTER({reason})",
-                ))
-                continue
 
             if buy:
-                signals.append(Signal(
-                    direction=Direction.BUY, code=code, dt=dt,
-                    price=float(close[i]), strength=strength,
-                    reason=f"{reason}(slope={cur_slope:.2f},str={strength:.1f})",
-                ))
-                continue
+                strength = 0.7
+                if cur_rsi <= rsi_os:
+                    strength = 0.9
+                    reason_parts.append("RSI_OS")
 
+                signals.append(Signal(
+                    direction=Direction.BUY, code=code,
+                    dt=dt, price=price, strength=strength,
+                    reason="+".join(reason_parts)
+                ))
+
+            # ── 매도 조건 ──
             sell = False
+            sell_reason = []
+
             if cur_st == -1 and prev_st == 1:
                 sell = True
-                reason = "ST_REVERSAL_DOWN"
-                strength = 1.0
+                sell_reason.append("ST_REV")
             elif cur_jma == -1 and prev_jma >= 0 and cur_st == 1:
                 sell = True
-                reason = "JMA_TURN_DOWN"
-                strength = 0.5
-            elif not np.isnan(cur_rsi) and cur_rsi >= rsi_ob and cur_jma <= 0:
+                sell_reason.append("JMA_DOWN")
+            elif cur_rsi >= rsi_ob and cur_jma <= 0:
                 sell = True
-                reason = "RSI_OB+JMA_WEAK"
-                strength = 0.6
+                sell_reason.append("RSI_OB")
 
             if sell:
                 signals.append(Signal(
-                    direction=Direction.SELL, code=code, dt=dt,
-                    price=float(close[i]), strength=strength,
-                    reason=f"{reason}(str={strength:.1f})",
+                    direction=Direction.SELL, code=code,
+                    dt=dt, price=price, strength=0.7,
+                    reason="+".join(sell_reason)
                 ))
 
         return signals
 
-    def _is_sideways(self, df: pd.DataFrame, idx: int) -> bool:
-        """
-        매수 시점(idx)에서 과거 데이터만으로 횡보 여부 판단.
-        미래 데이터 참조 없음 - 모두 idx 이전 데이터만 사용.
 
-        조건 (2개 이상 충족 시 횡보):
-          1) ATR 축소: 현재 ATR < 20일 평균 ATR * 0.7
-          2) JMA slope 진동: 최근 10일간 부호 전환 3회 이상
-          3) 가격 레인지 축소: 최근 20일 일중 변동폭 평균 < 2%
-        """
+    def _is_sideways(self, df, idx):
+        """YAML 설정 기반 횡보 감지."""
         lookback = 20
         if idx < lookback:
             return False
 
-        sideways_count = 0
+        window = df.iloc[max(0, idx - lookback):idx + 1]
+        count = 0
 
-        # 조건 1: ATR 축소 (변동성 감소)
+        atr_ratio = config.get("signals.bull.sideways.atr_ratio", 0.85)
+        jma_flips_th = config.get("signals.bull.sideways.jma_flips", 3)
+        range_th = config.get("signals.bull.sideways.range_pct", 3.5)
+        min_cond = config.get("signals.bull.sideways.min_conditions", 1)
+
         if 'atr' in df.columns:
             atr_now = df['atr'].iloc[idx]
-            atr_window = df['atr'].iloc[max(0, idx - lookback):idx]
-            atr_avg = atr_window.mean()
+            atr_avg = window['atr'].mean()
             if atr_avg > 0 and not np.isnan(atr_now):
-                if atr_now < atr_avg * 0.7:
-                    sideways_count += 1
+                if atr_now < atr_avg * atr_ratio:
+                    count += 1
 
-        # 조건 2: JMA slope 방향 진동 (추세 부재)
         if 'jma_slope' in df.columns:
             slope_window = df['jma_slope'].iloc[max(0, idx - 10):idx + 1]
             if len(slope_window) >= 5:
-                signs = (slope_window > 0).astype(int)
-                flips = signs.diff().abs().sum()
-                if flips >= 3:
-                    sideways_count += 1
+                signs = np.sign(slope_window.values)
+                flips = np.sum(signs[1:] != signs[:-1])
+                if flips >= jma_flips_th:
+                    count += 1
 
-        # 조건 3: 일중 변동폭 축소 (좁은 레인지)
         if all(c in df.columns for c in ['high', 'low', 'close']):
-            window = df.iloc[max(0, idx - lookback):idx + 1]
             if len(window) >= 10:
                 avg_close = window['close'].mean()
                 if avg_close > 0:
                     range_pct = (
                         (window['high'] - window['low']) / avg_close
                     ).mean() * 100
-                    if range_pct < 2.0:
-                        sideways_count += 1
+                    if range_pct < range_th:
+                        count += 1
 
-        return sideways_count >= 2
+        return count >= min_cond
+
 
 
 class BearInverseSignalGenerator(ISignalGenerator):
