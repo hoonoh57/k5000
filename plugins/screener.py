@@ -6,6 +6,11 @@ plugins/screener.py  [MUTABLE]
 베타/상관도 계산 → 상위 N개 선정.
 
 core_engine.DataService.fetch_large_cap_stocks() 로직 이식.
+
+[FIX 2026-02-08] UI 날짜 미반영 버그 수정
+- screen() 시그니처에 start_date/end_date 추가
+- datetime.now() 하드코딩 제거 → 파라미터 우선
+- index_df 날짜 범위 필터링 추가
 """
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
@@ -45,6 +50,8 @@ class BetaCorrelationScreener(IScreener):
         index_df: pd.DataFrame,
         data_source: IDataSource,
         params: Dict[str, Any],
+        start_date: Optional[str] = None,   # ★ UI 시작일
+        end_date: Optional[str] = None,     # ★ UI 종료일
     ) -> List[Candidate]:
         """전체 스크리닝 실행."""
         try:
@@ -54,11 +61,16 @@ class BetaCorrelationScreener(IScreener):
             min_corr = params.get("screen_min_corr", params.get("corr_min", 0.4))
             months = params.get("screen_months", 6)
 
-            # 기간 계산
-            end_date = datetime.now().strftime("%Y-%m-%d")
-            start_date = (datetime.now() - timedelta(days=months * 30)).strftime("%Y-%m-%d")
+            # ★ 기간 계산 — UI 파라미터 우선, params 차선, now() 폴백
+            if end_date is None:
+                end_date = params.get("end_date",
+                    datetime.now().strftime("%Y-%m-%d"))
+            if start_date is None:
+                start_date = params.get("start_date",
+                    (datetime.now() - timedelta(days=months * 30)).strftime("%Y-%m-%d"))
 
-            logger.info(f"[SCREEN] 시작: {start_date} ~ {end_date}, 풀={pool_size}, 선정={top_n}")
+            logger.info(f"[SCREEN] 시작: {start_date} ~ {end_date}, "
+                        f"풀={pool_size}, 선정={top_n}")
 
             # 1) 대형주 후보 로드
             candidates = self._fetch_large_cap(pool_size)
@@ -69,7 +81,25 @@ class BetaCorrelationScreener(IScreener):
 
             # 2) KOSPI 지수 수익률
             if index_df is None or index_df.empty:
-                index_df = data_source.fetch_index_candles("KOSPI", start_date, end_date)
+                index_df = data_source.fetch_index_candles(
+                    "KOSPI", start_date, end_date)
+
+            # ★ 전달된 index_df가 있어도 날짜 범위로 필터링
+            if index_df is not None and not index_df.empty:
+                if "date" in index_df.columns:
+                    mask = ((index_df["date"] >= start_date)
+                            & (index_df["date"] <= end_date))
+                    filtered = index_df.loc[mask]
+                    if len(filtered) >= 20:
+                        index_df = filtered.copy()
+                elif (index_df.index.name == "date"
+                      or str(index_df.index.dtype).startswith("datetime")):
+                    mask = ((index_df.index >= start_date)
+                            & (index_df.index <= end_date))
+                    filtered = index_df.loc[mask]
+                    if len(filtered) >= 20:
+                        index_df = filtered.copy()
+
             if index_df is None or index_df.empty or "close" not in index_df.columns:
                 logger.warning("[SCREEN] KOSPI 지수 데이터 없음")
                 return []
@@ -78,7 +108,8 @@ class BetaCorrelationScreener(IScreener):
             if isinstance(kospi_close, pd.DataFrame):
                 kospi_close = kospi_close.iloc[:, 0]
             kospi_returns = kospi_close.pct_change().dropna()
-            logger.info(f"[SCREEN] KOSPI 지수 {len(index_df)}행, 수익률 {len(kospi_returns)}행")
+            logger.info(f"[SCREEN] KOSPI 지수 {len(index_df)}행, "
+                        f"수익률 {len(kospi_returns)}행")
 
             # 3) 각 종목 베타/상관 계산
             results = []
@@ -87,7 +118,8 @@ class BetaCorrelationScreener(IScreener):
                 name = cand["name"]
 
                 if i % 10 == 0:
-                    logger.info(f"[SCREEN] 분석 중 {i+1}/{len(candidates)}: {name}({code})")
+                    logger.info(f"[SCREEN] 분석 중 {i+1}/{len(candidates)}: "
+                                f"{name}({code})")
 
                 try:
                     df = data_source.fetch_candles(code, start_date, end_date)
@@ -115,8 +147,10 @@ class BetaCorrelationScreener(IScreener):
                     # 추가 정보
                     last_close = float(stock_close.iloc[-1])
                     first_close = float(stock_close.iloc[0])
-                    return_6m = (last_close / first_close - 1) * 100 if first_close > 0 else 0
-                    avg_vol = float(df["volume"].mean()) if "volume" in df.columns else 0
+                    return_6m = ((last_close / first_close - 1) * 100
+                                 if first_close > 0 else 0)
+                    avg_vol = (float(df["volume"].mean())
+                               if "volume" in df.columns else 0)
 
                     results.append(Candidate(
                         code=code,
@@ -145,7 +179,6 @@ class BetaCorrelationScreener(IScreener):
         """MySQL stock_base_info에서 KOSPI 대형주 시총 상위 로드."""
         engine = self._engine
         if engine is None:
-            # 직접 연결 시도
             try:
                 from config.default_params import MYSQL_PARAMS
                 from sqlalchemy import create_engine
@@ -161,8 +194,6 @@ class BetaCorrelationScreener(IScreener):
                 return []
 
         try:
-            # core_engine.py의 fetch_large_cap_stocks 로직 이식
-            # 단계적 필터 (strict → loose)
             filters = [
                 # Level 0: 가장 엄격
                 """
@@ -177,7 +208,7 @@ class BetaCorrelationScreener(IScreener):
                 ORDER BY market_cap DESC
                 LIMIT %(limit)s
                 """,
-                # Level 1: instrument_type 완화
+                # Level 1
                 """
                 SELECT code, name, market_cap
                 FROM stock_base_info
@@ -188,7 +219,7 @@ class BetaCorrelationScreener(IScreener):
                 ORDER BY market_cap DESC
                 LIMIT %(limit)s
                 """,
-                # Level 2: is_common_stock 완화
+                # Level 2
                 """
                 SELECT code, name, market_cap
                 FROM stock_base_info
@@ -197,7 +228,7 @@ class BetaCorrelationScreener(IScreener):
                 ORDER BY market_cap DESC
                 LIMIT %(limit)s
                 """,
-                # Level 3: 최소 필터
+                # Level 3
                 """
                 SELECT code, name, market_cap
                 FROM stock_base_info
@@ -213,7 +244,8 @@ class BetaCorrelationScreener(IScreener):
                     if len(df) >= 5:
                         logger.info(f"[SCREEN] DB Level-{level}: {len(df)}개")
                         return [
-                            {"code": str(row["code"]).strip(), "name": str(row["name"]).strip()}
+                            {"code": str(row["code"]).strip(),
+                             "name": str(row["name"]).strip()}
                             for _, row in df.iterrows()
                         ]
                 except Exception as e:
@@ -226,7 +258,8 @@ class BetaCorrelationScreener(IScreener):
             logger.error(f"[SCREEN] fetch_large_cap 오류: {e}")
             return []
 
-    def _calc_beta(self, stock_ret: pd.Series, market_ret: pd.Series) -> float:
+    def _calc_beta(self, stock_ret: pd.Series,
+                   market_ret: pd.Series) -> float:
         try:
             aligned = pd.concat([stock_ret, market_ret], axis=1).dropna()
             if len(aligned) < 20:
@@ -239,7 +272,8 @@ class BetaCorrelationScreener(IScreener):
         except Exception:
             return np.nan
 
-    def _calc_corr(self, stock_ret: pd.Series, market_ret: pd.Series) -> float:
+    def _calc_corr(self, stock_ret: pd.Series,
+                   market_ret: pd.Series) -> float:
         try:
             aligned = pd.concat([stock_ret, market_ret], axis=1).dropna()
             if len(aligned) < 20:

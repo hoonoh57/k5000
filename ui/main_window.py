@@ -366,6 +366,7 @@ class MainWindow(QMainWindow):
         p["target_profit_pct"] = self.spin_target.value()
         p["stop_loss_pct"] = self.spin_stoploss.value()
         p["jma_slope_min"] = self.spin_slope_min.value()
+        ### p["use_atr_stops"] = False  # UI 손절/익절 값을 직접 사용
         p["candidate_pool"] = self.spin_pool.value()
         p["screen_top_n"] = self.spin_top_n.value()
         self.params = p
@@ -403,9 +404,15 @@ class MainWindow(QMainWindow):
         self._append_log("스크리닝 시작")
         params = self._sync_params()
 
+        start_date = self.date_start.date().toString("yyyy-MM-dd")
+        end_date = self.date_end.date().toString("yyyy-MM-dd")
+        self._append_log(f"스크리닝 기간: {start_date} ~ {end_date}")
+
         worker = ScreeningWorker(
             data_source=self._data_source,
             params=params,
+            start_date=start_date,
+            end_date=end_date,
         )
         worker.finished.connect(self._on_screen_done)
         worker.error.connect(self._on_screen_error)
@@ -440,6 +447,24 @@ class MainWindow(QMainWindow):
     #  단일 분석
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     def _on_analyze(self):
+        # ── DB 전략 적용 (콤보에서 선택된 매매전략) ──
+        trade_idx = self.combo_trade_strategy.currentIndex()
+        if trade_idx >= 0:
+            strategy_id = self.combo_trade_strategy.itemData(trade_idx)
+            if strategy_id:
+                try:
+                    strategy = self._db_store.get_trade_strategy(strategy_id)
+                    if strategy and strategy.get("buy_rules"):
+                        from plugins.db_signal_adapter import DBStrategySignalGenerator
+                        db_sig_gen = DBStrategySignalGenerator(strategy)
+                        self._engine.signal_gen = db_sig_gen
+                        self._engine.strategy_router = None
+                        exit_params = db_sig_gen.get_exit_params()
+                        self._engine.params.update(exit_params)
+                        logger.info(f"[UI] 분석 시 DB전략 적용: {strategy['name']}")
+                except Exception as e:
+                    logger.warning(f"[UI] DB전략 적용 실패: {e}")
+
         rows = self.stock_table.selectionModel().selectedRows()
         if not rows:
             QMessageBox.warning(self, "알림", "종목을 선택하세요.")
@@ -596,6 +621,26 @@ class MainWindow(QMainWindow):
         self.batch_table.setRowCount(0)
         self.analysis_results = []
 
+        ######################################################################  
+        # ── DB 전략 적용 (일괄 분석에도 동일 적용) ──
+        trade_idx = self.combo_trade_strategy.currentIndex()
+        if trade_idx >= 0:
+            strategy_id = self.combo_trade_strategy.itemData(trade_idx)
+            if strategy_id:
+                try:
+                    strategy = self._db_store.get_trade_strategy(strategy_id)
+                    if strategy and strategy.get("buy_rules"):
+                        from plugins.db_signal_adapter import DBStrategySignalGenerator
+                        db_sig_gen = DBStrategySignalGenerator(strategy)
+                        self._engine.signal_gen = db_sig_gen
+                        self._engine.strategy_router = None
+                        exit_params = db_sig_gen.get_exit_params()
+                        self._engine.params.update(exit_params)
+                        logger.info(f"[UI] 일괄분석 DB전략 적용: {strategy['name']}")
+                except Exception as e:
+                    logger.warning(f"[UI] 일괄분석 DB전략 적용 실패: {e}")
+        ######################################################################  
+
         start_date, end_date = self._get_dates()
         params = self._sync_params()
 
@@ -680,8 +725,16 @@ class MainWindow(QMainWindow):
             trade_list = self._db_store.get_all_trade_strategies()
             for s in trade_list:
                 lock = " 🔒" if s.get("locked") else ""
+                desc = s.get("description", "") or ""
+                pct_str = ""
+                if "pct" in desc:
+                    import re
+                    m = re.search(r'(\d+\.?\d*)pct', desc)
+                    if m:
+                        pct_str = f" [{m.group(1)}%]"
                 self.combo_trade_strategy.addItem(
-                    f"{s['name']}{lock}", s["strategy_id"])
+                    f"{s['name']}{lock}{pct_str}", s["strategy_id"])
+
             active_t = self._db_store.get_active_trade_strategy()
             if active_t:
                 for i in range(self.combo_trade_strategy.count()):
@@ -732,8 +785,21 @@ class MainWindow(QMainWindow):
                     self.spin_slope_min.setValue(float(p["jma_slope_min"]))
                 self._db_store.set_active_trade_strategy(strategy_id)
                 logger.info(f"[UI] 매매전략 변경: {strategy['name']}")
+
+                # DB 전략 기반 신호 생성기로 교체
+                from plugins.db_signal_adapter import DBStrategySignalGenerator
+                db_sig_gen = DBStrategySignalGenerator(strategy)
+                self._engine.signal_gen = db_sig_gen
+                self._engine.strategy_router = None  # 라우터 우회
+                exit_params = db_sig_gen.get_exit_params()
+                self._engine.params.update(exit_params)
+                logger.info(f"[UI] DB전략 신호생성기 적용: {strategy['name']}")
+                logger.info(f"[UI] engine.signal_gen={self._engine.signal_gen.__class__.__name__}, router={self._engine.strategy_router}")
+
         except Exception as e:
-            logger.warning(f"[UI] 매매전략 로드 실패: {e}")
+            import traceback
+            logger.warning(f"[UI] 매매전략 로드 실패: {e}\n{traceback.format_exc()}")
+
 
 
     def _open_strategy_manager(self, tab: str = "screen"):

@@ -20,20 +20,21 @@ class ScreeningWorker(QThread):
     error = pyqtSignal(str)
     progress = pyqtSignal(str)
 
-    def __init__(self, data_source, params, parent=None):
+    def __init__(self, data_source, params, start_date=None, end_date=None, parent=None):
         super().__init__(parent)
         self.data_source = data_source
         self.params = params
+        self._start_date = start_date
+        self._end_date = end_date
 
     def run(self):
         try:
             screener = BetaCorrelationScreener()
 
-            # KOSPI 지수 로드
             from datetime import datetime, timedelta
             months = self.params.get("screen_months", 6)
-            end_date = datetime.now().strftime("%Y-%m-%d")
-            start_date = (datetime.now() - timedelta(days=months * 30)).strftime("%Y-%m-%d")
+            end_date = self._end_date or datetime.now().strftime("%Y-%m-%d")
+            start_date = self._start_date or (datetime.now() - timedelta(days=months * 30)).strftime("%Y-%m-%d")
 
             self.progress.emit(f"KOSPI 지수 로드 중...")
             index_df = self.data_source.fetch_index_candles("KOSPI", start_date, end_date)
@@ -44,9 +45,10 @@ class ScreeningWorker(QThread):
                 index_df=index_df,
                 data_source=self.data_source,
                 params=self.params,
+                start_date=start_date,
+                end_date=end_date,
             )
 
-            # Candidate → dict 변환 (UI 호환)
             results = []
             for c in candidates:
                 results.append({
@@ -64,7 +66,6 @@ class ScreeningWorker(QThread):
             msg = f"ScreeningWorker error: {e}\n{traceback.format_exc()}"
             logger.error(msg)
             self.error.emit(msg)
-
 
 class AnalysisWorker(QThread):
     finished = pyqtSignal(dict)
