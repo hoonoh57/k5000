@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QTableWidget, QTableWidgetItem, QHeaderView,
     QTabWidget, QGroupBox, QFormLayout, QDoubleSpinBox, QSpinBox,
     QDateEdit, QProgressBar, QTextEdit, QSplitter,
-    QAbstractItemView, QMessageBox,
+    QAbstractItemView, QMessageBox, QComboBox,
 )
 from PyQt6.QtGui import QColor, QFont
 import matplotlib
@@ -38,6 +38,8 @@ from plugins.screener import BetaCorrelationScreener
 
 from ui.chart_widget import StockChartWidget
 from ui.workers import ScreeningWorker, AnalysisWorker, BatchAnalysisWorker
+from ui.strategy_manager_dialog import StrategyManagerDialog
+from core.db_strategy_store import DBStrategyStore
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,14 @@ class MainWindow(QMainWindow):
         self.analysis_results = []
         self.current_result = None
         self._workers = []
+        self._db_store = DBStrategyStore(
+            host=MYSQL_PARAMS["host"],
+            port=MYSQL_PARAMS["port"],
+            user=MYSQL_PARAMS["user"],
+            password=MYSQL_PARAMS["password"],
+            db=MYSQL_PARAMS["database"],
+        )
+
 
         # ── 엔진 조립 (전략 라우터 포함) ──
         self._data_source = CompositeDataSource(
@@ -152,6 +162,17 @@ class MainWindow(QMainWindow):
         self.spin_top_n.setValue(10)
         scan_layout.addRow("선정 수:", self.spin_top_n)
 
+        # ── 스크리닝 전략 콤보 ──
+        screen_combo_row = QHBoxLayout()
+        self.combo_screen_strategy = QComboBox()
+        self.combo_screen_strategy.setMinimumWidth(180)
+        screen_combo_row.addWidget(self.combo_screen_strategy)
+        btn_screen_mgr = QPushButton("관리")
+        btn_screen_mgr.setFixedWidth(50)
+        btn_screen_mgr.clicked.connect(lambda: self._open_strategy_manager("screen"))
+        screen_combo_row.addWidget(btn_screen_mgr)
+        scan_layout.addRow("스크린전략:", screen_combo_row)
+
         self.btn_screen = QPushButton("스크리닝 실행")
         self.btn_screen.clicked.connect(self._on_screen)
         scan_layout.addRow(self.btn_screen)
@@ -170,6 +191,18 @@ class MainWindow(QMainWindow):
         # 파라미터 그룹
         param_group = QGroupBox("전략 파라미터")
         param_layout = QFormLayout(param_group)
+
+        # ── 매매전략 콤보 ──
+        trade_combo_row = QHBoxLayout()
+        self.combo_trade_strategy = QComboBox()
+        self.combo_trade_strategy.setMinimumWidth(180)
+        self.combo_trade_strategy.currentIndexChanged.connect(self._on_trade_strategy_changed)
+        trade_combo_row.addWidget(self.combo_trade_strategy)
+        btn_trade_mgr = QPushButton("관리")
+        btn_trade_mgr.setFixedWidth(50)
+        btn_trade_mgr.clicked.connect(lambda: self._open_strategy_manager("trade"))
+        trade_combo_row.addWidget(btn_trade_mgr)
+        param_layout.addRow("매매전략:", trade_combo_row)
 
         self.spin_jma_period = QSpinBox()
         self.spin_jma_period.setRange(3, 50)
@@ -285,6 +318,9 @@ class MainWindow(QMainWindow):
         splitter.addWidget(right_panel)
         splitter.setSizes([350, 1050])
         main_layout.addWidget(splitter)
+
+        # ── 콤보박스 초기 로드 ──
+        self._load_strategy_combos()
 
     def _setup_log_handler(self):
         """Python logger 출력을 로그 탭으로 리다이렉트."""
@@ -610,3 +646,87 @@ class MainWindow(QMainWindow):
         self._show_busy(False)
         self.progress_label.setText("일괄 분석 오류")
         self._append_log(f"오류: {err}")
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    #  전략 콤보박스 / 관리자
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    def _load_strategy_combos(self):
+        """DB에서 전략 목록을 읽어 콤보박스에 채운다."""
+        try:
+            # 스크리닝 전략
+            self.combo_screen_strategy.blockSignals(True)
+            self.combo_screen_strategy.clear()
+            screen_list = self._db_store.get_all_screen_strategies()
+            for s in screen_list:
+                lock = " 🔒" if s.get("locked") else ""
+                self.combo_screen_strategy.addItem(
+                    f"{s['name']}{lock}", s["strategy_id"])
+            # 활성 전략 선택
+            active = self._db_store.get_active_screen_strategy()
+            if active:
+                for i in range(self.combo_screen_strategy.count()):
+                    if self.combo_screen_strategy.itemData(i) == active["strategy_id"]:
+                        self.combo_screen_strategy.setCurrentIndex(i)
+                        break
+            self.combo_screen_strategy.blockSignals(False)
+
+            # 매매전략
+            self.combo_trade_strategy.blockSignals(True)
+            self.combo_trade_strategy.clear()
+            trade_list = self._db_store.get_all_trade_strategies()
+            for s in trade_list:
+                lock = " 🔒" if s.get("locked") else ""
+                self.combo_trade_strategy.addItem(
+                    f"{s['name']}{lock}", s["strategy_id"])
+            active_t = self._db_store.get_active_trade_strategy()
+            if active_t:
+                for i in range(self.combo_trade_strategy.count()):
+                    if self.combo_trade_strategy.itemData(i) == active_t["strategy_id"]:
+                        self.combo_trade_strategy.setCurrentIndex(i)
+                        break
+            self.combo_trade_strategy.blockSignals(False)
+
+            logger.info(f"[UI] 전략 콤보 로드: 스크린={len(screen_list)}, 매매={len(trade_list)}")
+        except Exception as e:
+            logger.warning(f"[UI] 전략 콤보 로드 실패: {e}")
+
+    def _on_trade_strategy_changed(self, index):
+        """매매전략 콤보 변경 시 파라미터 자동 반영."""
+        if index < 0:
+            return
+        strategy_id = self.combo_trade_strategy.itemData(index)
+        if strategy_id is None:
+            return
+        try:
+            strategy = self._db_store.get_trade_strategy(strategy_id)
+            if strategy and strategy.get("params"):
+                p = strategy["params"]
+                if "jma_length" in p:
+                    self.spin_jma_period.setValue(int(p["jma_length"]))
+                if "jma_phase" in p:
+                    self.spin_jma_phase.setValue(int(p["jma_phase"]))
+                if "st_period" in p:
+                    self.spin_st_period.setValue(int(p["st_period"]))
+                if "st_multiplier" in p:
+                    self.spin_st_mult.setValue(float(p["st_multiplier"]))
+                if "target_pct" in p:
+                    self.spin_target.setValue(float(p["target_pct"]))
+                if "stop_pct" in p:
+                    self.spin_stoploss.setValue(float(p["stop_pct"]))
+                if "jma_slope_min" in p:
+                    self.spin_slope_min.setValue(float(p["jma_slope_min"]))
+                self._db_store.set_active_trade_strategy(strategy_id)
+                logger.info(f"[UI] 매매전략 변경: {strategy['name']}")
+        except Exception as e:
+            logger.warning(f"[UI] 매매전략 로드 실패: {e}")
+
+    def _open_strategy_manager(self, tab: str = "screen"):
+        """전략 관리자 다이얼로그 열기."""
+        dlg = StrategyManagerDialog(
+            db_store=self._db_store,
+            parent=self,
+            initial_tab=tab,
+        )
+        dlg.exec()
+        # 다이얼로그 닫힌 후 콤보 새로고침
+        self._load_strategy_combos()
